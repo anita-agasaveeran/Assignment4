@@ -1,0 +1,9 @@
+{
+  "source_archive_checksums_verified": true,
+  "source_rows_verified": true,
+  "suppressed_values_preserved": true,
+  "cross_table_generation_checks": 3136,
+  "known_balance_exceptions": 2,
+  "license": "Statistics Canada Open Licence",
+  "not_cc0": true
+}

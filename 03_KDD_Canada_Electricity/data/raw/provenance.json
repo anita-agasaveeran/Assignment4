@@ -1,0 +1,43 @@
+{
+  "status": "PUBLIC_RELEASE_V1_2026-11-01",
+  "built_at_utc": "2026-11-01T07:43:42.887992+00:00",
+  "sources": [
+    {
+      "table": "25-10-0015-01",
+      "title": "Electric power generation, monthly generation by type of electricity",
+      "doi": "https://doi.org/10.25318/2510001501-eng",
+      "source_url": "https://www150.statcan.gc.ca/n1/tbl/csv/25100015-eng.zip",
+      "source_zip_sha256": "fcf9bc07a49f2f0bbd66bacd3fd234b639955ea81e8cb62fcf174a642880b1df",
+      "metadata_sha256": "c27dcd8a17a879490b6994d6d9d6fe66fbb30dbd580c99e244c943ed5d7ffb25",
+      "zip_bytes": 947697,
+      "rows": 76776,
+      "max_period": "2026-08",
+      "min_period": "2008-01",
+      "missing_numeric": 18069
+    },
+    {
+      "table": "25-10-0016-01",
+      "title": "Electric power generation, monthly receipts, deliveries and availability",
+      "doi": "https://doi.org/10.25318/2510001601-eng",
+      "source_url": "https://www150.statcan.gc.ca/n1/tbl/csv/25100016-eng.zip",
+      "source_zip_sha256": "a9826f1d58da8c67823c210e08c29119fa0f08e563a50b5953f6e0bf22f71719",
+      "metadata_sha256": "1a531a48227a9f7e7e293fe72a8edf9ed86135020ac6997b28ef397be61b4c4d",
+      "zip_bytes": 268102,
+      "rows": 37888,
+      "max_period": "2026-08",
+      "min_period": "2008-01",
+      "missing_numeric": 12583
+    }
+  ],
+  "license": "Statistics Canada Open Licence: https://www.statcan.gc.ca/en/terms-conditions/open-licence",
+  "kaggle_license": "Other - Statistics Canada Open Licence",
+  "files": {
+    "generation_monthly.csv": "c8ea7e5d869f9a50cb93e8512eae493b51ba7ab3fc2947a4806210e04a977e6a",
+    "flows_monthly.csv": "5fc2137a984895d123c1d247037fb1907fbb6c4e5327e9c4bae0a9889c878579",
+    "availability_panel.csv": "6c1b86b8d319343970a39d71e0bada0d626bea3b0f49e9540d9dd828933ea8c1",
+    "cross_table_generation_checks.csv": "6194b0bc85bd72bc0c3598cb7e53c9a25628ad40ead8313fd2aaff7bb6ba4f40",
+    "seasonal_naive_backtest.csv": "00b7d5d01af2046616aa10c8783f50b8e1d2313ff0920283bc7dd4996fef65c0",
+    "backtest_metrics.csv": "814d5779cc7bb115d851faf5f7970a3956be52ed9f652218dee78544dec229fc"
+  },
+  "research_note": "seasonal naive forecast uses only target t-12; sample is latest revised source vintage, not historical real-time release."
+}

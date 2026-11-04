@@ -1,0 +1,31 @@
+{
+  "generation_rows": 76776,
+  "generation_non_numeric": 18069,
+  "flows_rows": 37888,
+  "flows_non_numeric": 12583,
+  "month_range": [
+    "2008-01",
+    "2026-08"
+  ],
+  "target_observations": 3136,
+  "balance_comparable_rows": 2401,
+  "accounting_discrepancies": [
+    {
+      "month": "2019-02",
+      "geography": "British Columbia",
+      "balance_residual_mwh": 70931.0
+    },
+    {
+      "month": "2019-02",
+      "geography": "Canada",
+      "balance_residual_mwh": 70931.0
+    }
+  ],
+  "generation_reconciliation_max_abs": 0.0,
+  "backtest_evaluable_pairs": 1176,
+  "warnings": [
+    "The publication date and historical data may be revised",
+    "The official availability balance is not end-user demand",
+    "Source-reported February 2019 balance discrepancies are retained, not fixed."
+  ]
+}

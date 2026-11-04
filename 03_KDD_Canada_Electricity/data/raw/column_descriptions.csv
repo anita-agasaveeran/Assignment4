@@ -1,0 +1,48 @@
+file,column,type,description
+generation_monthly.csv,source_table,string,Official Statistics Canada table identifier.
+generation_monthly.csv,month,string,"Reference month, ISO YYYY-MM."
+generation_monthly.csv,geography,string,Canada or a province/territory; Canada is an aggregate.
+generation_monthly.csv,geography_id,string,Official Statistics Canada geographic DGUID.
+generation_monthly.csv,producer_class,string,Producer class; categories include overlapping totals.
+generation_monthly.csv,generation_type,string,Electricity generation technology; includes nested totals.
+generation_monthly.csv,generation_mwh,numeric,Published generation in MWh; missing values remain missing.
+generation_monthly.csv,source_status,string,"Published Statistics Canada status code; .. unavailable, x suppressed, blank observed."
+generation_monthly.csv,source_vector,string,Original Statistics Canada vector/series identifier.
+generation_monthly.csv,source_coordinate,string,Original Statistics Canada table dimension coordinate.
+flows_monthly.csv,source_table,string,Official Statistics Canada table identifier.
+flows_monthly.csv,month,string,"Reference month, ISO YYYY-MM."
+flows_monthly.csv,geography,string,Canada or a province/territory; Canada is an aggregate.
+flows_monthly.csv,geography_id,string,Official Statistics Canada geographic DGUID.
+flows_monthly.csv,flow_component,string,"Official generation, receipt, delivery or availability category."
+flows_monthly.csv,flow_mwh,numeric,"Published electricity-flow value, MWh."
+flows_monthly.csv,source_status,string,"Published Statistics Canada status code; .. unavailable, x suppressed, blank observed."
+flows_monthly.csv,source_vector,string,Original Statistics Canada vector/series identifier.
+flows_monthly.csv,source_coordinate,string,Original Statistics Canada table dimension coordinate.
+availability_panel.csv,month,string,"Reference month, ISO YYYY-MM."
+availability_panel.csv,geography,string,Canada or a province/territory; Canada is an aggregate.
+availability_panel.csv,generation_mwh,numeric,Published generation in MWh; missing values remain missing.
+availability_panel.csv,receipts_mwh,numeric,Reported total electricity receipts in MWh.
+availability_panel.csv,deliveries_mwh,numeric,Reported total electricity deliveries in MWh.
+availability_panel.csv,availability_mwh,numeric,"Published electricity available for use in MWh, not direct customer demand."
+availability_panel.csv,availability_status,string,Source status code for electricity availability.
+availability_panel.csv,balance_residual_mwh,numeric,"Generation + receipts - deliveries - availability, MWh; missing if inputs missing."
+cross_table_generation_checks.csv,month,string,"Reference month, ISO YYYY-MM."
+cross_table_generation_checks.csv,geography,string,Canada or a province/territory; Canada is an aggregate.
+cross_table_generation_checks.csv,generation_table_mwh,numeric,"Generation total from Statistics Canada table 25-10-0015-01, MWh."
+cross_table_generation_checks.csv,flows_table_mwh,numeric,"Generation total from Statistics Canada table 25-10-0016-01, MWh."
+cross_table_generation_checks.csv,_merge,string,Pandas merge reconciliation source indicator.
+cross_table_generation_checks.csv,difference_mwh,numeric,"Generation total difference between the two original tables, MWh."
+seasonal_naive_backtest.csv,forecast_origin,string,Forecast origin at December year-end in ISO YYYY-MM.
+seasonal_naive_backtest.csv,forecast_horizon_month,integer,"Forecast month beyond December origin, 1 through 12."
+seasonal_naive_backtest.csv,month,string,"Reference month, ISO YYYY-MM."
+seasonal_naive_backtest.csv,geography,string,Canada or a province/territory; Canada is an aggregate.
+seasonal_naive_backtest.csv,actual_mwh,numeric,Reported revised historical monthly target electricity availability in MWh.
+seasonal_naive_backtest.csv,actual_status,string,Official status flag for observed availability.
+seasonal_naive_backtest.csv,seasonal_naive_mwh,numeric,"Predicted availability using target from 12 months previously, MWh."
+seasonal_naive_backtest.csv,usable_prediction,boolean,True when both forecast and actual observed target exist.
+seasonal_naive_backtest.csv,absolute_error_mwh,numeric,Absolute forecast error in MWh; missing if target or prediction unavailable.
+backtest_metrics.csv,geography,string,Canada or a province/territory; Canada is an aggregate.
+backtest_metrics.csv,candidate_pairs,integer,Total historical candidate forecast-target pairs.
+backtest_metrics.csv,evaluated_pairs,integer,Count of comparable forecast-target pairs.
+backtest_metrics.csv,mae_mwh,numeric,Mean absolute forecast error in MWh.
+backtest_metrics.csv,wape_pct,numeric,Weighted absolute percentage error in percent.

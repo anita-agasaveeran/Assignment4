@@ -5,8 +5,8 @@ Three end-to-end data science projects, each following a different methodology o
 | # | Methodology | Project | Dataset | Status |
 |---|---|---|---|---|
 | 1 | CRISP-DM | [Finding Value Wines](01_CRISP-DM_Wine_Value/) | Wine Reviews, WineEnthusiast (Kaggle) | Phase 1 done |
-| 2 | SEMMA | Flight Arrival-Delay Prediction | US flight delays 2025–26 (Kaggle) | planned |
-| 3 | KDD | Knowledge Discovery in Canadian Electricity | StatCan generation & trade (Kaggle) | planned |
+| 2 | SEMMA | [Will My Flight Be Disrupted Tomorrow?](02_SEMMA_Flight_Delays/) | US BTS flights 2025–26 (Kaggle, CC0) | front pass done |
+| 3 | KDD | [Is Canada's Grid Becoming Less Combustion-Dependent?](03_KDD_Canada_Electricity/) | StatCan generation & trade (Kaggle, StatCan Open Licence) | front pass done |
 
 Each project folder has a Colab notebook, a detailed report, deployment artifacts, a critic review log, a Medium article draft and a video script.
 
