@@ -1,0 +1,26 @@
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Original raw downloads (each project keeps the copy it needs under <project>/data/)
+/data/
+
+# Large files that exceed GitHub limits
+*.parquet
+!**/data/sample/*.parquet
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Kept locally only (course instructions and reference papers)
+instructions.txt
+resources/

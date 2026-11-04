@@ -1,0 +1,20 @@
+# Shared environment for all three projects (Python 3.10+; tested locally on 3.12).
+# Lower bounds only, so the file installs cleanly on top of Google Colab's preinstalled packages.
+numpy>=1.26
+pandas>=2.1
+pyarrow>=14
+scipy>=1.11
+matplotlib>=3.8
+seaborn>=0.13
+scikit-learn>=1.4
+statsmodels>=0.14
+lightgbm>=4.3
+mlxtend>=0.23        # Apriori / FP-Growth association rules
+datasketch>=1.6      # MinHash LSH
+joblib>=1.3
+streamlit>=1.35
+plotly>=5.20
+pytest>=8.0
+nbformat>=5.9
+nbclient>=0.10
+ipykernel>=6.29

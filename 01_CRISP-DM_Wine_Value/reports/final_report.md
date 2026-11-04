@@ -1,0 +1,345 @@
+# The $20 Bottle That Drinks Like $60: Finding Value Wines with CRISP-DM
+
+*CMPE 255 · Assignment 4 · Project 1 · Author: Anita Agasaveeran*
+
+> Every number in this report comes from a cell in `notebooks/CRISP_DM_Wine_Value.ipynb`, which is saved with its outputs. Data: [Wine Reviews](https://www.kaggle.com/datasets/zynicide/wine-reviews) (Zack Thoutt; scraped from WineEnthusiast, June 2017; CC BY-NC-SA 4.0). This report is shared under the same licence.
+
+## Executive summary
+_TODO (after Phase 5): the problem, the approach, headline results against the success criteria, and the recommendation (≤ 200 words)._
+
+---
+
+## 1. Business Understanding
+
+> **Revision 3** (+ round-3 polish), after critic rounds 1 (7/10), 2 (8/10) and 3 (9/10, no major issues); see `critiques/phase1_business_understanding_round*.md`.
+> - **Round 2 changes:** targets re-set so **every** development fold passes them, with lower-bound conditions; a pilot gate measured *relative* to note-blind rules; simple rules and RNG streams frozen in `src/`; a broader masking list; pre-registered insight hypotheses.
+> - **Round 1 changes:** simulated buying cycles; a fixed simple-rule set; the region confound measured; development-only score statistics.
+>
+> All figures come from notebook §1, saved with its outputs.
+
+### 1.1 Determine business objectives
+
+#### Background
+Critic scores sell wine. A "90 points" tag is one of the strongest quality signals a shopper has. But most wines a retailer considers have **no critic score yet**: new vintages, small producers, new imports. What the retailer usually has is a **tasting note** from the importer, the producer or its own staff, plus basic facts.
+
+This project imagines a **hypothetical stakeholder**: the buying team of an online wine retailer. No company was interviewed, so the parameters are explicit assumptions (§1.2). The team wants a *"Great Value: 90+ points for $25 or less"* collection. Each buying cycle it receives about **1,000 unscored ≤ $25 candidates** (A7) and can sample about **100** (A4).
+
+**The data** (counts only; no scores used here):
+
+| Item | Value |
+|---|---|
+| Raw rows / exact duplicates / unique reviews | 129,971 / 9,983 / 119,988 |
+| Repeat reviews of an already-reviewed title | 1,148 (covering 934 titles) |
+| Countries / grape varieties / wineries | 43 / 707 / 16,757 |
+| Named critics / reviews with no critic name / reviews with no price | 19 / 24,917 / 8,395 |
+
+**Price vs score (development data only, after the lockbox is sealed):**
+- Mean score 88.3 (SD 3.2); correlation with log price **0.63**.
+- Median price by score band: 80–84 $15 · 85–87 $18 · 88–90 $26 · 91–93 $44 · 94–100 $74.
+- 51.8% of priced wines cost ≤ $25, and 15.0% of those score 90+. In the critic-fold candidate pools used for the simulations the rate is **17.6%**; the 15.0% also includes anonymous reviews.
+- So a team sampling 100 of 1,000 candidates at random would find about **18 value wines**.
+
+#### Business objectives
+- **BO1, value shortlist:** rank each cycle's ~1,000 unscored ≤ $25 candidates so the ~100 samples contain as many 90+ wines as possible.
+- **BO2, internal score estimate:** an *estimated score band* (e.g. "est. 88–91") for buyers' planning until a real review arrives. **Internal only:** never shown to customers as WineEnthusiast points (R10).
+- **BO3, shelf navigation:** flavour profiles and descriptor–grape links for collection pages.
+- **BO4, catalogue quality:** detect duplicate and near-duplicate listings; "similar wines".
+- **BO5, critic calibration and buyer insights:** how much a score depends on who tasted the wine, and which attributes go with value.
+
+**Not in scope:** price setting, demand forecasting, personalised recommendations (no customer data).
+
+#### Evaluation design (fixed in Phase 1)
+**What a buyer would face:** notes from writers the model has never seen. So whole critics are held out:
+- **Critic folds.** The 19 named critics are dealt into 5 folds with balanced row counts (`winevalue.splits`).
+- **Lockbox.** One fold with ≥ 3 critics is drawn (seed 42) as the lockbox. Its scores are examined only in Phase 5.
+- **Anonymous reviews** are used for training only.
+
+Critics specialise by region, so the split also holds out regions. The coverage columns use categorical data only, which is allowed for the lockbox.
+
+| Fold | Role | Reviews | Critics | Top countries | Variety × country seen ≥ 20× in training | Winery seen in training |
+|---|---|---|---|---|---|---|
+| −1 | Training only | 24,917 | (anonymous) | US 64%, Italy 32% | – | – |
+| 0 | CV | 23,560 | Roger Voss | France 73%, Portugal 22% | 57% | 11% |
+| 1 | CV | 17,812 | Jim Gordon, Michael Schachner | Spain 34%, Chile 23%, US 22% | 29% | 30% |
+| **2** | **Lockbox** | **17,884** | **Anne Krebiehl MW, Jeff Jenssen, Kerin O'Keefe, Sean P. Sullivan** | **Italy 54%, US 25%, Austria 11%** | **90%** | **73%** |
+| 3 | CV | 17,810 | 6 critics (Gregutt, Czerwinski, Iijima, …) | US 63%, Germany 11%, Australia 11% | 87% | 32% |
+| 4 | CV | 18,005 | 6 critics (Boone, Kettmann, Buzzeo, …) | US 84%, South Africa 7% | 85% | 71% |
+
+**What the lockbox tests: new writers in a mix of regions.**
+- **Coverage.** Lockbox coverage is better than in development folds 0 and 1, because anonymous training notes include many Italian wines. The closest development fold is **fold 3**, and every target is checked against it.
+- **One critic dominates the lockbox's ≤ $25 pool.** Of its 7,334 candidates, Kerin O'Keefe has 3,697 (50%), Sean P. Sullivan 1,757 (24%), Anne Krebiehl MW 1,544 (21%) and Jeff Jenssen 336 (5%).
+- **So per-critic results** are reported as precision in the top 10% of each critic's pool, also with and without O'Keefe. Jenssen's are marked low-confidence.
+
+#### Business success criteria (pre-registered; thresholds in `config.py`)
+- Measured **once**, in Phase 5, on the lockbox critics. Simple rules are scored on the same data.
+- **Pass rule:** the point estimate meets the target **and** the stated lower bound (LB) holds.
+- **LBs** are one-sided 90%, from 500 bootstrap resamples of **wineries**.
+- Every target is met by **every** development fold, including fold 3.
+
+| ID | Criterion | Target | Lower-bound condition | Weakest development fold |
+|---|---|---|---|---|
+| BSC1 | **Shortlist.** Expected precision@100 of the DM2 ranker over 200 simulated cycles of 1,000 ≤ $25 candidates | ≥ 0.55 **and** ≥ 1.4× the best rule in the frozen **simple-rule set** (`winevalue.rules`: price, winery track record, province track record, variety × country, winery then price; random ties), measured on the lockbox | Top-10% lift vs that rule, LB ≥ 1.2× | P@100 0.61; lift 1.56×; LB 1.43× |
+| BSC2 | **Internal score band.** Share of ≤ $25 candidates whose price-free estimate is within ±2 points | ≥ 0.60 and ≥ +5 pp over variety × country | Gain LB > 0 | 0.63; +7.3 pp (LB +6.0) |
+| BSC3 | **Navigation.** Flavour profiles | 6–15 profiles, each ≥ 1% of wines. Two independent reviewer agents (**not** the analyst), each blind to the other, can each name ≥ 80% of profiles from their top terms with confidence ≥ 3/5 | Top-10-term Jaccard ≥ 0.5 between profiles fitted on two halves of the development data | – (Phase 4) |
+| BSC4 | **Usability.** One screen. Inputs: note, country, grape, vintage, price. Outputs: est. score band, P(90+), value verdict, flavour profile, 5 similar wines | All shown in the recorded demo, < 3 s per query | – | – |
+| BSC5 | **Buyer insights.** Pre-registered hypotheses H1–H6 | **≥ 4 of 6** replicate, **including H5 or H6**: stated direction and condition met in **both** development and lockbox data | As stated per hypothesis | – (Phases 4–5) |
+
+**Pre-registered hypotheses (`config.HYPOTHESES`):**
+- *Sanity checks (strong in development data):*
+  - **H1:** longer notes go with higher scores (Spearman ρ > 0, LB > 0).
+  - **H2:** within a variety × country group, pricier wines score higher (LB > 0).
+  - **H3:** a named designation goes with higher scores (same variety × country; LB > 0).
+- **H4:** critics differ. The SD of critic effects (vs a training-fitted variety × country expectation) exceeds 0.5 points, **LB > 0.5**. This is a spread statistic, so it compares fairly across datasets with different critics. *Limitation:* the lockbox has only 4 critics, which a winery bootstrap doesn't capture.
+- *Actionable:*
+  - **H5:** among ≤ $25 wines, whites are more often value wines than reds (LB > 0). The colour map is frozen from variety names in Phase 3, before any lockbox use.
+  - **H6:** among ≤ $25 wines, a strong winery track record (shrunk mean ≥ 89, `GroupMeanBaseline(keys=("winery",), shrink=20)` on training) goes with a higher value-wine rate (LB > 0).
+
+**Necessary, not sufficient.** These criteria use *critic* notes, but the real use is on importer, producer or staff notes (A1). Deployment therefore needs a **pilot gate** on **≥ 400 ≤ $25 retailer notes** for wines that later receive a critic score. On those same pilot wines it must beat the note-blind rules:
+- ±2 accuracy ≥ +5 pp over variety × country, with LB > 0;
+- the ranker's top-20% precision for 90+ wines ≥ 1.3× the **best of the frozen simple-rule set**, with LB > 1.0. In development, top-20% lift vs price is 1.44–1.74×.
+
+**Power:** 400 wines give about 80% power at fold-3-like effects. With 100, a model that meets every development target would pass only 39–67% of the time. (`config.PILOT_*`)
+
+### 1.2 Assess situation
+
+#### Inventory of resources
+| Type | Resource |
+|---|---|
+| Data | Wine Reviews (Kaggle), 129,971 reviews, one table. No sales, inventory or customer data |
+| People | One analyst. **Hypothetical stakeholder**: A1–A7 are explicit assumptions with sensitivity checks. No sommelier or domain expert. Reviewers: course instructor, an independent critic, and independent reviewer agents for BSC3 |
+| Compute / software | Laptop + Google Colab; Python 3.12, pandas, scikit-learn, LightGBM, mlxtend, datasketch, statsmodels, Streamlit |
+
+#### Requirements
+- **R-1, prediction timing:** when a buyer considers a wine, **before any critic review exists**. Available then: note, country/province/region, grape, winery and its *past* scores, vintage, price.
+- **R-2, inputs by use:**
+  - The **score estimate** (BO2) and **value verdict** exclude `price` (so "quality vs price" isn't circular).
+  - The **shortlist ranker** (BO1/DM2) may use price.
+  - Neither may use `taster_name` / `taster_twitter_handle`.
+- **R-3, honest test:**
+  - The lockbox is scored once.
+  - Exact duplicates are removed.
+  - Test reviews whose title appears in training are dropped (124 of 934 repeat titles span folds).
+  - Anonymous notes attributed to a lockbox critic with p > 0.5 are dropped from training (859 rows).
+- **R-4, reproducibility:**
+  - Fixed seeds.
+  - Cycles and tie-breaks use separate RNG streams, so every rule is scored on identical cycles (tested).
+  - The simple-rule set and masking list are frozen in `src/`.
+  - The notebook runs top to bottom in Colab, saved with outputs.
+- **R-5, licence:** outputs shared under CC BY-NC-SA 4.0.
+
+#### Assumptions
+| # | Assumption | Testable? | Handling |
+|---|---|---|---|
+| A1 | Retailer notes carry similar descriptive signal to critic notes | **Not with this data.** Leave-critic-out tests new critics, not new kinds of writer (producers have an incentive to praise) | Masking proxy (DM1b) now; **relative pilot gate** before deployment |
+| A2 | 90+ points is a meaningful value bar | No | Also reported at 88+ / 92+ |
+| A3 | 2017 prices still rank wines sensibly relative to each other | No | Ranking use only; cap also tested at $20 / $30 |
+| A4 | ~100 samples per cycle | No | Also k = 50 / 200 |
+| A5 | ~$25 per sample; ~2 analyst-hours per cycle to re-score | No | Illustrative economics |
+| A6 | Scores are honest; blind tasting unknown | No | Critic calibration descriptive |
+| A7 | **~1,000 unscored ≤ $25 candidates per cycle** (importer/distributor catalogues of a mid-size online retailer) | No | Sensitivity at 500 / 2,000 |
+
+#### Constraints
+- One static 2017 snapshot, with no review dates.
+- Only wines scoring 80+ are published.
+- No stakeholder interviews.
+- One analyst and an academic timeline.
+
+#### Anonymous-review check (R-3, R8)
+A TF-IDF style classifier uses note *text* and critic names only, no scores. It identifies the critic of held-out named notes with 98.4% accuracy overall.
+
+| Threshold | Accuracy on held-out named notes above threshold | Anonymous notes above threshold | Of which → lockbox critic |
+|---|---|---|---|
+| **0.5 (used)** | 99.2% | 11,872 | **859** |
+| 0.7 | 99.8% | 4,418 | 329 |
+| 0.9 | 100.0% | 341 | 29 |
+
+At p > 0.5 the classifier is still 99.2% accurate. Dropping the 859 notes costs only 3.4% of anonymous training data (`config.ATTRIBUTION_THRESHOLD = 0.5`).
+
+#### Risks & contingencies
+| # | Risk | Likelihood | Impact | Contingency |
+|---|---|---|---|---|
+| R1 | **Note-source shift** (A1) | High | High | Masking test (DM1b); relative pilot gate; BSCs "necessary, not sufficient" |
+| R2 | **Region confound:** variety × country coverage 29–87% by development fold, so the baseline looks weaker than on a random split | Confirmed | Medium | Both splits reported; targets set on the critic split; per-fold and per-critic results |
+| R3 | **Duplicates / repeat titles** (9,983 dups; 1,148 repeat reviews of 934 titles; 124 span folds) | Confirmed | High if ignored | Dups removed; test rows with a training title dropped |
+| R4 | **Selection bias:** only 80+ wines are published | Confirmed | Medium | Stated limitation |
+| R5 | **Stale prices**, single snapshot | Confirmed | Low–Medium | Ranking use only; cap sensitivity |
+| R6 | **Critic differences** for the same variety and country | Observed (descriptive) | Medium | H4 / DM6; the lockbox mixes 4 critics |
+| R7 | **Long-tail categories** (707 grapes, 16,757 wineries) | Confirmed | Medium | Rare-category grouping (Phase 3) |
+| R8 | **Anonymous notes by lockbox critics** | Small | Low | 859 rows dropped (p > 0.5) |
+| R9 | **Weak lockbox result.** Development margins are smallest for fold 3 (the fold most like the lockbox) on DM1/BSC2, and for folds 1 and 4 on BSC1 | Medium | Medium | Every target is met by every development fold; winery-clustered LBs; per-critic reporting |
+| R10 | **Misleading or infringing display** of estimated "points" | Medium | Medium | Internal "estimated band" only, labelled |
+| R11 | **One critic dominates the lockbox** (O'Keefe 50% of the ≤ $25 pool) | Confirmed | Medium | Per-critic top-10% precision; results with and without O'Keefe |
+| R12 | **Licence (NC-SA)** limits commercial use | Confirmed | Low (academic) | Stated in README and app |
+
+#### Terminology
+| Term | Meaning |
+|---|---|
+| Critic score / points | WineEnthusiast's 80–100 rating |
+| Value wine | 90+ points at ≤ $25 |
+| Tasting note | The `description` |
+| Candidate pool / cycle | The unscored ≤ $25 wines considered in one buying round (A7) |
+| Shortlist | The top k to sample |
+| Precision@k / top-10% precision | Share of the shortlist that are value wines |
+| Simple-rule set | The frozen non-ML rankings in `winevalue.rules` |
+| Lift | Ranker precision ÷ best simple-rule precision |
+| MAE / within ±2 | Mean absolute error / share of estimates within 2 points |
+| Critic fold / lockbox | A held-out group of critics / the fold sealed until Phase 5 |
+| Lower bound (LB) | One-sided 90% winery-clustered bootstrap bound |
+| Evaluative language | Verdict words and drinking windows (`config.EVALUATIVE_TERMS`, `EVALUATIVE_PATTERNS`) |
+| TF-IDF | Word weighting for notes |
+| Flavour profile | A cluster of similar notes |
+| Support / confidence / lift (rules) | Association-rule statistics |
+| MinHash LSH | Fast near-duplicate search |
+
+#### Costs & benefits
+**Feasibility check.** Development folds only; untuned models; test rows with a training title dropped. Shortlists are scored over 200 simulated cycles (cycles and ties on separate RNG streams, one tie stream per rule); LBs use a winery-clustered bootstrap. Training here uses all anonymous rows: the R-3 attribution filter (859 rows, none of them lockbox rows) starts in Phase 3.
+
+*Score estimate (price-free):*
+
+| Predictor | MAE by fold (0 / 1 / 3 / 4) | MAE mean | Within ±2 on ≤ $25 by fold | Mean |
+|---|---|---|---|---|
+| Global mean | 2.56 / 2.76 / 2.33 / 2.58 | 2.56 | 0.49 / 0.42 / 0.58 / 0.53 | 0.51 |
+| Variety × country | 2.72 / 2.62 / 2.27 / 2.52 | 2.53 | 0.55 / 0.48 / 0.56 / 0.54 | 0.53 |
+| **Text model** | 1.83 / 1.75 / 2.00 / 1.72 | **1.82** | 0.71 / 0.70 / 0.63 / 0.72 | **0.69** |
+| Text model, round-1 mask | 1.89 / 1.79 / 2.06 / 1.74 | 1.87 | 0.71 / 0.69 / 0.61 / 0.71 | 0.68 |
+| Text model, frozen mask | 1.93 / 1.85 / 2.07 / 1.75 | 1.90 | 0.71 / 0.69 / 0.62 / 0.69 | 0.68 |
+
+*Per fold, against the pre-registered targets:*
+
+| Fold | MAE reduction (LB) | Within ±2 gain, pp (LB) | Masked MAE increase | Best simple rule (P@100) | DM2 ranker P@100 | Lift (cycles) | Top-10% lift LB |
+|---|---|---|---|---|---|---|---|
+| 0 | 32.7% (31.5%) | +16.3 (+15.2) | 0.10 | price (0.42) | 0.66 | 1.58× | 1.50× |
+| 1 | 33.2% (32.3%) | +22.4 (+21.4) | 0.11 | price (0.34) | 0.61 | 1.79× | 1.70× |
+| 3 | **11.9% (10.5%)** | **+7.3 (+6.0)** | 0.07 | winery then price (0.34) | 0.72 | 2.13× | 1.92× |
+| 4 | 31.6% (30.8%) | +17.8 (+16.6) | 0.03 | winery then price (0.40) | 0.62 | **1.56×** | **1.43×** |
+| **Target** | ≥ 10% (LB > 5%) | ≥ +5 (LB > 0) | ≤ 0.15 | – | ≥ 0.55 | ≥ 1.4× | ≥ 1.2× |
+
+*Is the weak baseline an artefact of the split?*
+
+| MAE | Random split (title-grouped) | Critic split (mean) |
+|---|---|---|
+| Global mean | 2.60 | 2.56 |
+| Variety × country | 2.39 | 2.53 |
+| Text model | 1.30 | 1.82 |
+
+*Shortlist rules* (expected precision@100, random ties):
+
+| Rule | 500 candidates | **1,000 (A7)** | 2,000 |
+|---|---|---|---|
+| Value base rate | 0.18 | 0.18 | 0.18 |
+| Price (pricier first) | 0.34 | 0.36 | 0.37 |
+| Winery track record | 0.22 | 0.26 | 0.31 |
+| Province track record | 0.18 | 0.17 | 0.14 |
+| Variety × country | 0.18 | 0.18 | 0.17 |
+| Winery track record, then price | 0.33 | 0.36 | 0.37 |
+| Text model (no price) | 0.49 | 0.60 | 0.70 |
+| **DM2 ranker (text + price)** | 0.52 | **0.65** | 0.76 |
+
+**Feasibility verdict:**
+- **Score estimate.** For unseen critics, the text model cuts MAE by 12–33% vs variety × country; ±2 accuracy rises by +7 to +22 pp.
+- **Not just verdict words.** With the frozen evaluative list masked (verdict words + drinking windows), MAE rises by only 0.03–0.11 points, and 87% of the improvement is kept on average (76% in fold 3). The narrower round-1 list kept 91%.
+- **The baseline's weakness is partly the split.** On a random title-grouped split, variety × country beats the global mean by about 8%; on the critic split, by about 1%. New writers in partly new regions are genuinely harder, which is the deployment risk.
+- **Shortlist.** The DM2 ranker is 1.56–2.13× the best simple rule in each fold, with lower bounds of 1.43–1.92×.
+- **Targets.** Every pre-registered target is met by every development fold, including its lower-bound condition.
+
+*Disclosure:* one exploratory check, run before the lockbox existed, used all critics. All figures here use development data only.
+
+*Sampling economics* (1,000-candidate cycles, $25 per sample, 2 analyst-hours ≈ $100 per cycle to re-score):
+
+| Way of choosing samples | Value wines found in 100 samples | Precision@100 | Sampling cost per value wine |
+|---|---|---|---|
+| Random | 17.1 | 0.17 | $146 |
+| Best simple rule (per fold) | 37.2 | 0.37 | $67 |
+| **DM2 ranker** | **65.4** | **0.65** | **$38** |
+
+| Benefit framing | Per cycle | Break-even on ~$3,500 analyst time |
+|---|---|---|
+| **Cash:** the ranker matches the best rule's 37.2 finds with ≈ 50 samples instead of 100 | ≈ $1,250 saved; ≈ $1,150 after running cost | ≈ 3 cycles |
+| **Opportunity value:** sampling all 100 anyway | ≈ +28 value wines ≈ $1,900 at the simple rule's cost per find | ≈ 2 cycles |
+
+- **Revenue upside:** probably larger, but not quantifiable without sales data, so it isn't claimed.
+- **Other benefits:** BO2–BO4.
+
+**Critic differences (descriptive).** For the *same variety and country*, critics' averages range from −2.30 (Alexander Peartree) to +1.35 (Matt Kettmann) points vs expectation. Critics also differ in which wines they review, so H4 and DM6 test this properly.
+
+**Costs:**
+- About 60–80 analyst-hours (≈ $3,500 at an assumed $50/h); open-source software; free hosting.
+- About 2 hours per cycle to re-score, plus a quarterly drift check.
+- A pilot on about 100 retailer notes.
+
+### 1.3 Determine data mining goals
+| ID | Data mining goal | Technique | Success criterion (lockbox, Phase 5) | Uncertainty | Supports |
+|---|---|---|---|---|---|
+| DM1 | **Estimate the critic score** from note + origin + grape + vintage (no price, no critic) | Baselines vs ridge on TF-IDF, gradient boosting, optional transformer embeddings | MAE ≥ 10% below variety × country; plus BSC2 | LB of reduction > 5% | BO2 |
+| DM1b | **Signal beyond verdict words** | Same model with the frozen evaluative list masked | Masked MAE ≤ DM1 MAE + 0.15 (absolute, so it's stable even when DM1's reduction is small) | Point estimate | BO1, BO2 (A1 proxy) |
+| DM2 | **Rank ≤ $25 candidates** | DM1 model + log price (or a direct P(90+) classifier) | = BSC1; also k = 50/200 and pools of 500/2,000 | = BSC1 | BO1 |
+| DM3 | **Flavour profiles** | k-means / NMF on TF-IDF or embeddings; outlier notes checked | = BSC3; silhouette or topic coherence reported | = BSC3 | BO3 |
+| DM4 | **Descriptor ↔ grape links** | FP-Growth on descriptor sets + grape | ≥ 10 rules with lift ≥ 2 and support ≥ 0.5% in development data that keep lift ≥ 1.5 in the lockbox | Point estimate | BO3, BO5 |
+| DM5 | **Near-duplicates and similar wines** | MinHash LSH on note shingles | Recall ≥ 0.9 of exact-Jaccard ≥ 0.8 pairs on a 10k sample; precision ≥ 0.9 on 100 hand-checked flagged pairs | Point estimate | BO4 |
+| DM6 | **Critic calibration** | Fixed / mixed effects: score ~ wine attributes + critic | Critic effects with 95% CIs; feeds H4 / BSC5 | As BSC5 | BO5 |
+
+**Outlier analysis** from the course template is a supporting step in Phases 2–3: price outliers (up to $3,300), odd vintages, unusually short or long notes.
+
+### 1.4 Produce project plan
+Dates assume work started 2026-11-03. `instructions.txt` gives no due date. **The assignment due date still needs confirming with the project owner**, and the dates will be adjusted to fit it.
+
+| Phase | Planned dates | Effort | Inputs → outputs | Milestone / go-no-go |
+|---|---|---|---|---|
+| 1 Business Understanding | Nov 3–4 | 10% | Raw data → §1; frozen evaluation design, rules, targets, hypotheses | Critic: no major issues |
+| 2 Data Understanding | Nov 4–6 | 20% | §1 → description, EDA, quality report (**development data only** for score analysis) | Quality issues logged |
+| 3 Data Preparation | Nov 6–9 | 25% | §2 → cleaned table, R-3 filters, features (incl. wine colour for H5), text pipeline | Leakage audit passes |
+| 4 Modeling | Nov 9–12 | 20% | §3 → DM1–DM6 on development folds | DM targets met in CV, or loop back |
+| *Buffer* | Nov 13 | – | Absorbs one loop-back (Phase 4 → 3) | – |
+| 5 Evaluation | Nov 14 | 10% | §4 → single lockbox run, BSC1–BSC5 | Go/no-go |
+| 6 Deployment | Nov 15–17 | 15% | §5 → Value Finder app, monitoring, pilot plan, report, article, video | Final critic review |
+
+**Fallback scope:** if time runs short, DM5 (LSH) and DM6 (critic model) shrink to a minimal demonstration. DM1, DM1b, DM2 and DM3 are protected.
+
+**Resources:** one analyst for every phase, plus an independent critic review (≥ 2 rounds) at the end of each.
+
+**Initial assessment of tools & techniques:**
+- **scikit-learn:** TF-IDF, ridge, k-means, NMF; pipelines fit inside each fold.
+- **LightGBM:** non-linear models.
+- **mlxtend:** FP-Growth.
+- **datasketch:** MinHash LSH.
+- **statsmodels:** critic effects with CIs.
+- **Streamlit:** the app.
+- **IBM SPSS Modeler** (suggested in the assignment) has a CRISP-DM project view, but needs a licence, handles free text poorly and can't be shared as a runnable notebook, so the CRISP-DM structure is followed in the notebook and this report instead.
+
+## 2. Data Understanding
+### 2.1 Initial data collection report
+### 2.2 Data description report
+### 2.3 Data exploration report
+### 2.4 Data quality report
+
+## 3. Data Preparation
+### 3.1 Rationale for inclusion / exclusion
+### 3.2 Data cleaning report (incl. outlier analysis)
+### 3.3 Derived attributes & generated records
+### 3.4 Merged data
+### 3.5 Formatted dataset & dataset description
+
+## 4. Modeling
+### 4.1 Modeling techniques & assumptions
+### 4.2 Test design
+### 4.3 Parameter settings, models & model descriptions
+### 4.4 Model assessment & revised parameters
+
+## 5. Evaluation
+### 5.1 Assessment against business success criteria · approved models
+### 5.2 Review of process
+### 5.3 Possible actions & decision
+
+## 6. Deployment
+### 6.1 Deployment plan
+### 6.2 Monitoring & maintenance plan
+### 6.3 Final presentation
+### 6.4 Experience documentation (lessons learned)
+
+---
+
+## References
+- Chapman, P. et al. (2000). *CRISP-DM 1.0: Step-by-step data mining guide.* SPSS.
+- Schröer, C., Kruse, F., & Marx Gómez, J. (2021). A systematic literature review on applying CRISP-DM process model. *Procedia Computer Science*, 181, 526–534.
+- IBM. *CRISP-DM help overview*, IBM SPSS Modeler documentation.
+- Thoutt, Z. (2017). *Wine Reviews* [dataset]. Kaggle. https://www.kaggle.com/datasets/zynicide/wine-reviews (data from WineEnthusiast, winemag.com).
