@@ -15,7 +15,7 @@ def test_critic_folds_deterministic_and_balanced():
 
 
 def test_every_critic_in_exactly_one_fold_and_anonymous_excluded():
-    df = load_raw()
+    df = load_raw().drop_duplicates()
     folds = assign_folds(df)
     assert set(folds.unique()) == set(range(N_FOLDS)) | {-1}
     assert (folds[df["taster_name"].isna()] == -1).all()
@@ -24,6 +24,21 @@ def test_every_critic_in_exactly_one_fold_and_anonymous_excluded():
 
 
 def test_lockbox_has_several_critics():
-    df = load_raw()
+    df = load_raw().drop_duplicates()
     mapping, lockbox = critic_folds(df["taster_name"])
     assert sum(f == lockbox for f in mapping.values()) >= 3
+
+
+def test_frozen_mapping_matches_phase1_derivation_and_names_the_lockbox():
+    from winevalue import config
+    from winevalue.splits import _norm_name
+    mapping, lockbox = critic_folds(load_raw().drop_duplicates()["taster_name"])
+    assert {_norm_name(pd.Series([k])).iloc[0]: v for k, v in mapping.items()} == config.CRITIC_FOLDS
+    assert lockbox == config.LOCKBOX_FOLD
+    assert config.LOCKBOX_CRITICS == ["Anne Krebiehl MW", "Jeff Jenssen", "Kerin O’Keefe", "Sean P. Sullivan"]
+
+
+def test_assign_folds_rejects_unknown_critics():
+    import pytest
+    with pytest.raises(ValueError):
+        assign_folds(pd.DataFrame({"taster_name": ["Someone New"]}))

@@ -1,0 +1,30 @@
+column,dtype,non-null,definition,provenance
+points,int64,1.0,WineEnthusiast score 80–100 (target),source
+description,str,1.0,raw tasting note (audit only),source
+note,str,1.0,"description minus scores, score commentary, verdict labels; prices → _price_",derived (prepare.py)
+title,str,1.0,"source column, normalised",source
+winery,str,1.0,"source column, normalised",source
+winery_key,str,1.0,case-folded winery,derived (prepare.py)
+designation,str,0.7104,"source column, normalised",source
+has_designation,bool,1.0,designation (named cuvée / bottling) present,derived (prepare.py)
+country,str,1.0,"source column, normalised",source
+province,str,1.0,"source column, normalised",source
+province_model,str,1.0,province with pseudo-provinces → 'Unknown province',derived (prepare.py)
+region_1,str,1.0,"source column, normalised",source
+region_2,str,0.3948,"source column, normalised",source
+has_region_1,bool,1.0,region_1 (sub-region / appellation) present,derived (prepare.py)
+variety,str,1.0,"source column, normalised",source
+grape,str,1.0,grape_canonical(variety) / grape ≠ raw label,derived (prepare.py)
+label_differs,bool,1.0,grape_canonical(variety) / grape ≠ raw label,derived (prepare.py)
+colour,str,1.0,"wine_colour(variety, title, winery, description); text only, never scores",derived (prepare.py)
+vintage,float64,0.9646,"extract_vintage(title, winery) (revised rule + NV guard)",derived (prepare.py)
+is_nonvintage,bool,1.0,"extract_vintage(title, winery) (revised rule + NV guard)",derived (prepare.py)
+age_at_scrape,float64,0.9646,2017 − vintage,derived (prepare.py)
+n_words,int64,1.0,word count of NOTE (model text) / < 10 words,derived (prepare.py)
+short_note,bool,1.0,word count of NOTE (model text) / < 10 words,derived (prepare.py)
+price,float64,0.9362,"USD, 2017; 3 implausible set missing",source
+in_value_pool,bool,1.0,price ≤ $25 (and not missing),derived (prepare.py)
+taster_name,str,0.7969,raw critic name (folds only),source
+critic,str,0.7969,normalised critic name,derived (prepare.py)
+fold,int64,1.0,frozen critic fold (-1 = anonymous),derived (prepare.py)
+is_lockbox,bool,1.0,sealed lockbox row (fold 2),derived (prepare.py)

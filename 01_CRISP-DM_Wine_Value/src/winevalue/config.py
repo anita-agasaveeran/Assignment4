@@ -105,7 +105,30 @@ DM5_SHINGLE_WORDS = 5
 DM5_NUM_PERM = 128
 DM5_TAU = 0.5                 # near-duplicate = exact Jaccard >= 0.5 on 5-word shingles
 DM5_N_SYNTH = 2000            # synthetic copies, seed = SEED
-DM5_EDIT_RATE = (0.02, 0.08)  # share of words replaced by random corpus words; ~1,670 copies clear TAU (Phase 2 simulation)
-DM5_MIN_RECALL = 0.90         # on synthetic positives (exact J >= TAU)
-DM5_MAX_FALSE_FLAG = 0.01     # on 2,000 random pairs of distinct notes
-DM5_MIN_PRECISION = 0.90      # on all real flagged pairs, labelled with the rule in report section 1.3
+DM5_EDIT_RATE = (0.02, 0.08)  # share of words replaced by random corpus words; 1,694 of 2,000 clear TAU (seed 42, Phase 3 corpus)
+DM5_LSH_THRESHOLD = 0.3      # loose LSH candidate stage; every candidate is then verified by EXACT Jaccard >= TAU
+DM5_MIN_RECALL = 0.90         # (a) PASS/FAIL: share of synthetic positives (exact J >= TAU) that the detector flags.
+                              #     It checks the IMPLEMENTATION, not the data: with b = 37 bands x r = 3 rows,
+                              #     P(candidate | J = 0.5) = 0.993, so it is close to guaranteed (critic round 2 N5)
+DM5_MAX_CANDIDATE_SHARE = 1e-4  # (b) reported engineering check (not discriminating: Phase 3 measured 1.7e-7)
+DM5_MIN_PRECISION = 0.90      # (c) EXPLORATORY only: the 43 real pairs were inspected in Phase 2, so precision under
+                              #     similarity.is_true_duplicate is reported, not used as a pass/fail test.
+                              #     Timeline (critic round 2 N4): (c) was first RUN in Phase 3 critic round 1 (0.81 < 0.90);
+                              #     it was demoted to exploratory and the content-word rule amended AFTER that run;
+                              #     the result was unchanged (35/43).
+# DM5 corpus: distinct notes after exact de-duplication, barrel-sample removal and duplicated-note removal,
+# i.e. prepare(..., stop_before="near_duplicates"). prepare() drops near-duplicates by Jaccard >= TAU alone.
+
+# --- Frozen critic -> fold mapping (Phase 1 design; pinned in Phase 3 after critic round 1) ---
+# Derived once by splits.critic_folds() on the DE-DUPLICATED reviews. Computing it on other row sets (e.g. the raw
+# file with duplicates) gives a different lockbox, so the mapping is frozen here and splits.assign_folds() uses it.
+# Keys are normalised critic names (whitespace collapsed; the raw "Anne Krebiehl\xa0MW" maps to "Anne Krebiehl MW").
+CRITIC_FOLDS = {
+    "Roger Voss": 0,
+    "Michael Schachner": 1, "Jim Gordon": 1,
+    "Kerin O’Keefe": 2, "Sean P. Sullivan": 2, "Anne Krebiehl MW": 2, "Jeff Jenssen": 2,
+    "Paul Gregutt": 3, "Joe Czerwinski": 3, "Anna Lee C. Iijima": 3, "Carrie Dykes": 3, "Fiona Adams": 3, "Christina Pickard": 3,
+    "Virginie Boone": 4, "Matt Kettmann": 4, "Lauren Buzzeo": 4, "Susan Kostrzewa": 4, "Mike DeSimone": 4, "Alexander Peartree": 4,
+}
+LOCKBOX_FOLD = 2
+LOCKBOX_CRITICS = sorted(c for c, f in CRITIC_FOLDS.items() if f == LOCKBOX_FOLD)

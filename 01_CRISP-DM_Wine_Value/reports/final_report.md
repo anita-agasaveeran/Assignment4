@@ -275,7 +275,7 @@ At p > 0.5 the classifier is still 99.2% accurate. Dropping the 859 notes costs 
 | DM2 | **Rank ≤ $25 candidates** | DM1 model + log price (or a direct P(90+) classifier) | = BSC1; also k = 50/200 and pools of 500/2,000 | = BSC1 | BO1 |
 | DM3 | **Flavour profiles** | k-means / NMF on TF-IDF or embeddings; outlier notes checked | = BSC3; silhouette or topic coherence reported | = BSC3 | BO3 |
 | DM4 | **Descriptor ↔ grape links** | FP-Growth on descriptor sets + grape | ≥ 10 rules with lift ≥ 2 and support ≥ 0.5% in development data that keep lift ≥ 1.5 in the lockbox | Point estimate | BO3, BO5 |
-| DM5 | **Near-duplicates and similar wines** | MinHash LSH on 5-word note shingles (128 permutations) | *Re-specified 2026-11-04 (Phase 2 → Phase 1 loop-back; text only, no scores). Original, superseded: ~~recall ≥ 0.9 of exact-Jaccard ≥ 0.8 pairs on a 10k sample; precision ≥ 0.9 on 100 hand-checked pairs~~ (unmeasurable: only 43 real pairs ≥ 0.5 exist).* On the **full corpus**, τ = 0.5: (a) **recall ≥ 0.90** on synthetic positives: 2,000 notes (seed 42), each copied with 2–8% of words replaced by random corpus words; positives = copies with exact Jaccard ≥ 0.5 (~1,670 expected); (b) **false-flag rate ≤ 1%** on 2,000 random pairs of distinct notes; (c) **precision ≥ 0.90** on all real flagged pairs, labelled before checking with this rule: a *true duplicate* means both reviews describe the same wine (same producer and cuvée, vintages within 1 year; spelling/field differences allowed) **or** one note is attached to a different wine (catalogue error). Two independent reviewer agents label; disagreements count as false. Parameters in `config.DM5_*` | Point estimate | BO4 |
+| DM5 | **Near-duplicates and similar wines** | MinHash LSH on 5-word shingles (128 permutations): loose candidate stage (threshold 0.3), then **exact Jaccard verification ≥ τ = 0.5** (`winevalue.similarity`) | *Re-specified 2026-11-04 (Phase 2 → Phase 1 loop-back); made operational in Phase 3 (revision 2, same day); text only, no scores. *Timeline (Phase 3 critic round 2):* (c) was first run during Phase 3 critic round 1 (0.81 < 0.90); it was demoted to exploratory and the content-word rule amended **after** that run; the result was unchanged (35/43). (a) has not been run. Original, superseded: ~~recall ≥ 0.9 of exact-Jaccard ≥ 0.8 pairs on a 10k sample; precision ≥ 0.9 on 100 hand-checked pairs~~.* **Corpus:** distinct notes after exact de-duplication, barrel-sample and duplicated-note removal (`prepare(..., stop_before="near_duplicates")`; 119,280 notes). **Pass/fail: (a) recall ≥ 0.90** on synthetic positives (a check of the implementation, not of the data: with 37 bands × 3 rows, P(candidate | J = 0.5) = 0.993) (`similarity.synthetic_copies`: 2,000 notes, seed 42; edit rate ~ U(0.02, 0.08); k = round(rate·words) positions replaced by corpus tokens; positives = copies with exact J ≥ 0.5; 1,694 at seed 42). **Reported, not pass/fail:** (b) candidate share (≤ 0.01% target; it can't fail: 1.7e-7 measured, so it's an engineering check); (c) precision under `similarity.is_true_duplicate` (same wine relisted, or recycled/mis-attached note with ≤ 3 differing content words). (c) is **exploratory**, because the 43 real pairs were inspected in Phase 2; it's 35/43 = 0.81 and is reported without re-tuning. Parameters in `config.DM5_*` | Point estimate | BO4 |
 | DM6 | **Critic calibration** | Fixed / mixed effects: score ~ wine attributes + critic | Critic effects with 95% CIs; feeds H4 / BSC5 | As BSC5 | BO5 |
 
 **Outlier analysis** from the course template is a supporting step in Phases 2–3: price outliers (up to $3,300), odd vintages, unusually short or long notes.
@@ -426,11 +426,117 @@ The Phase 1 model is scored on *unseen* critics, so the relevant ceiling lies be
 **Conclusion:** the data is real and fit for purpose once the barrel-sample leak and the identity issues are handled. None of these changes the frozen Phase 1 targets. The one change to a Phase 1 goal (DM5) is a documented loop-back.
 
 ## 3. Data Preparation
+
+> **Revision 3**, after critic round 2 (8/10, **no major issues**: the phase gate is met; `critiques/phase3_data_preparation_round2.md`). Minor fixes:
+> - "Blanc de Noir(s)" yields to sparkling cues (40 sparkling wines had been labelled white);
+> - the mojibake repair no longer damages correct text;
+> - a descriptive "a point" is kept; "bang for the buck", "price point" and `_price_` join the strict DM1b mask;
+> - the DM5 timeline and the meaning of (a) are stated;
+> - the R8 filter takes a `critics=` argument for per-fold CV.
+>
+> **Revision 2**, after critic round 1 (7/10; `critiques/phase3_data_preparation_round1.md`). Main changes:
+> - the **lockbox mapping is pinned** as a constant;
+> - **DM5's corpus is named**, its rule is self-contained, and (c) is reported as exploratory;
+> - leak patterns are widened;
+> - the **leakage audit has checks that can fail**;
+> - `n_words` is counted on the model text;
+> - the colour map has a dated amendment;
+> - variety is encoded once.
+>
+> All preparation is one deterministic function, `winevalue.prepare.prepare()` (notebook §3, saved with outputs). Items carried from Phase 2 critic round 3 (N1–N5) are resolved here, before DM5(a) is run and before any H5 use.
+
+**Frozen folds.**
+- **Pinned mapping:** the critic → fold mapping derived in Phase 1 on the *de-duplicated* reviews is now a constant (`config.CRITIC_FOLDS`, `LOCKBOX_CRITICS`). Recomputing it on another row set (e.g. the raw file) would give a different lockbox.
+- **Enforcement:** `assign_folds()` uses the constant and fails on unknown critics. A test checks that it equals the Phase 1 derivation and that the lockbox is Anne Krebiehl MW, Jeff Jenssen, Kerin O'Keefe and Sean P. Sullivan.
+
 ### 3.1 Rationale for inclusion / exclusion
+| Column(s) | Role | Rationale |
+|---|---|---|
+| `points` | Target | Critic score |
+| `note` (from `description`) | Input: quality + ranker | Note with scores, score commentary, verdict labels and prices stripped |
+| `country`, `province_model`, `grape` (+ `label_differs`), `colour` | Input | Origin; **one** grape encoding (canonical grape + a "label differs" flag) |
+| `vintage`, `is_nonvintage`, `n_words`, `has_designation`, `has_region_1` | Input | Constructed (3.3) |
+| `price` | Ranker only; value verdict | R-2 |
+| `winery` / `winery_key` | Simple-rule set + DM6; not yet a model input | 56% of reviews come from wineries with < 20 reviews; producer names also appear in ~6% of notes (a known channel) |
+| `variety` (raw label) | Frozen simple rules + variety × country baseline only | Pre-registered benchmarks unchanged |
+| `region_1`, `region_2`, `designation` (text) | Excluded as raw categories | 1,226 / 17 / 37,665 values in the prepared table; represented by flags |
+| `taster_name`, `critic`, handle | **Excluded** (R-2) | Folds / DM6 only |
+| `title`, raw `description` | Excluded as inputs | Sources for vintage, colour and audits |
+
+**Rows:**
+- **Excluded:** exact duplicates; barrel samples (score range in note, or "barrel sample" in title or note); extra copies of duplicated notes and of near-duplicate pairs (exact J ≥ 0.5, the same definition DM5 uses); anonymous notes attributed to lockbox critics (R8).
+- **Kept but sealed:** lockbox rows.
+- **Kept:** reviews with no price (excluded from the ≤ $25 pool); outliers.
+
 ### 3.2 Data cleaning report (incl. outlier analysis)
+| Step | Rows before → after | Affected | Of which lockbox |
+|---|---|---|---|
+| Drop exact duplicates | 129,971 → 119,988 | 9,983 | – |
+| Drop barrel samples | 119,988 → 119,311 | 677 | 0 |
+| Keep one row per duplicated note (text rule) | 119,311 → 119,280 | 31 | 20 |
+| Keep one row per near-duplicate pair (exact J ≥ 0.5; all within one fold) | 119,280 → 119,237 | 43 | 16 |
+| Drop anonymous notes attributed to a lockbox critic (R8) | 119,237 → **118,378** | 859 | – |
+| Set implausible prices to missing | – | 3 | – |
+
+**Modeling table: 118,378 reviews** (development 100,530; lockbox 17,848). The lockbox lost 36 rows to text-only rules (reported).
+
+**Repairs:**
+- mojibake repaired only where the Latin-1 → UTF-8 round trip succeeds ("crÃ¨me" → "crème"; correct text such as "Âme" or "d'Âge" is untouched); whitespace normalised;
+- 3 prices set to missing;
+- missing categories → "Unknown";
+- pseudo-provinces → "Unknown province";
+- vintage re-parsed with the corrected rule.
+
+**Model text `note`:** explicit scores, **score commentary** ("too ripe to score higher", "loses a few points"; a descriptive "a point of acidity" is kept), WineEnthusiast labels ("Best Buy(s)", "Editor's Choice") removed; prices, including words like "six bucks", → `_price_` ("bucks the trend" is not a price). **Known R-2 residual:** price-relative wording ("at the price", "value-priced", "bang for the buck", "price point") and the `_price_` placeholder with its context stay in `note`; the stricter mask `text_audit.strict_price_mask` removes both in the Phase 4 sensitivity check.
+
+**Outlier analysis** (inputs only): 1,078 log-price / 1,965 note-length / 1,071 Isolation-Forest outliers. **Kept**, because they're genuine wines; log price and standardisation limit their influence.
+
 ### 3.3 Derived attributes & generated records
+| Attribute | Definition | Purpose |
+|---|---|---|
+| `note` | Description minus scores, score commentary, verdict labels; prices → `_price_` | Leak-free model text |
+| `grape` / `label_differs` | `grape_canonical(variety)` / grape ≠ raw label | One grape encoding; label style as a flag |
+| `colour` | `wine_colour(variety, title, winery)` | H5 (unmapped 1.5% → excluded); navigation |
+| `province_model` | Pseudo-provinces → "Unknown province" | Cleaner origin |
+| `vintage`, `is_nonvintage` | Revised parser + NV guard | Age signal |
+| `age_at_scrape` | 2017 − vintage | Interpretable age |
+| `n_words`, `short_note` | Word count of **`note`** (model text) / < 10 words | Length (H1); flag |
+| `has_designation` | Designation (named cuvée / bottling) present | H3; specificity |
+| `has_region_1` | `region_1` (sub-region / appellation) present | Specificity |
+| `winery_key` | Case-folded winery | Producer key |
+| `in_value_pool` | Price ≤ $25 | BSC1/BSC2 pool |
+
+**Generated records:** none in the modeling table. DM5's synthetic copies are generated from its **named corpus**: 119,280 distinct notes after exact de-duplication, barrel-sample and duplicated-note removal (`prepare(..., stop_before="near_duplicates")`).
+- **Synthetic positives:** 1,694 of 2,000 reach exact J ≥ 0.5 (seed 42).
+- **(b) Candidate share:** 1.7e-7, an engineering check that can't fail.
+- **(c) Exploratory precision** on the 43 real pairs (seen in Phase 2) under the frozen rule: **35/43 = 0.81**, reported without re-tuning. Eight pairs are different wines sharing recycled phrases; `prepare()` still removes all 43 by Jaccard alone (conservative for training).
+
 ### 3.4 Merged data
+- **One review table, plus external reference knowledge** (`winevalue.grapes`):
+  - a grape-synonym table;
+  - a grape-colour table with a title-style override on the winery-stripped title.
+- **Frozen before any colour × value view:** Phase 2 rev. 3; re-frozen 2026-11-04; amended the same day in revision 2 (US "Port", still Blanc de Noir, Clairet; negative tests) and again in **revision 3** (critic round 2 N1):
+  - "Blanc de Noir(s)" is applied only after the sparkling title cues (now also "Bruto", "bubbles", "Dosage Zero", "Méthode champenoise/traditionnelle") and a sparkling variety label have failed;
+  - it then gives sparkling if the note describes bubbles (mousse, bead, tirage, "on the yeast", …; text only), else white;
+  - 47 rows changed vs revision 2 (40 → sparkling, 4 "Rosé Blanc de Noir" → rosé; 14 in the ≤ $25 pool, 7 lockbox); 13 rows stay white (German/Austrian still Blanc de Noir, a Malbec, a Grenache, an Oregon still rosé-style wine); 1 is ambiguous (Treveri Cellars, likely sparkling, but its note has no bubble cue) and is left white rather than tuned;
+  - tests are built from the affected titles.
+- **Colour coverage:** 59.3% red, 30.9% white, 4.3% sparkling, 3.4% rosé, 0.7% fortified, 1.5% unmapped.
+- **Not added:** price, exchange-rate or vintage-chart data.
+
 ### 3.5 Formatted dataset & dataset description
+- **Dataset:** `data/processed/wine_prepared.parquet` (118,378 × 29; lockbox flagged). It's rebuilt by `prepare()` and git-ignored. The dictionary with definitions and provenance is committed (`wine_prepared_dictionary.csv`).
+- **Model format** (`features.build_preprocessor`): TF-IDF on `note`; one-hot on origin, grape and colour; standardised vintage and length; flags; log price in the ranker. It's fitted inside each training fold. A demo fit gives 8,675 features.
+- **Leakage audit, revision 2, with checks that can fail (all PASS):**
+  - an independent give-away term list (0.61% of notes, 723, still match; mostly descriptive, e.g. "to the point of", plus price-relative residue such as "price point", which the strict DM1b mask removes). The 1% bar is a coarse tolerance with no deeper justification: on its own it would not catch one leak family of the barrel-sample size (≈ 0.6%), so it is backed by the per-pattern counts in §3.2 and the probe below;
+  - no note text shared across folds;
+  - the lockbox is exactly the four frozen critics;
+  - a **development-only probe:** the 40 tokens most correlated with the score contain no give-away term ("years", "rich", "simple", "complex", "concentrated", …).
+- **R-3** is an evaluation-time filter keyed on **title only**, more conservative than the title + variety wine key.
+- **Carried to Phases 4–5:**
+  - the R8 attribution filter per development fold in CV (`splits.anon_lockbox_like(..., critics=<fold critics>)`). **Pre-registered:** CV uses the per-fold filter; the final Phase 5 fit uses the lockbox filter. The per-fold filters are larger (critic round 2 measured 2,048 / 1,823 / 4,039 / 3,095 for folds 0/1/3/4 vs 859), and Phase 4 reports this size difference;
+  - a Phase 5 sensitivity run excluding all anonymous notes whose top guess is a lockbox critic (1,257 remain below p = 0.5);
+  - the stricter DM1b mask (`strict_price_mask`: price-relative wording + `_price_`);
+  - DM5(a), reported with recall in the 0.5–0.6 Jaccard band.
 
 ## 4. Modeling
 ### 4.1 Modeling techniques & assumptions

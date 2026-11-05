@@ -20,7 +20,7 @@ Each round is saved as `phase<N>_<name>_round<R>.md`, using [`_template.md`](_te
 |---|---|---|---|
 | 1 · Business Understanding | 3 (+ DM5 loop-back from Phase 2, 2026-11-04) | 9/10, no major issues | ✅ passed |
 | 2 · Data Understanding | 3 | 8.5/10, no major issues | ✅ passed |
-| 3 · Data Preparation | 0 | – | not started |
+| 3 · Data Preparation | 2 (+ revision 3 for round-2 minors) | 8/10, no major issues | ✅ passed |
 | 4 · Modeling | 0 | – | not started |
 | 5 · Evaluation | 0 | – | not started |
 | 6 · Deployment | 0 | – | not started |
