@@ -42,7 +42,7 @@ The data is CC BY-NC-SA 4.0 (Zack Thoutt / WineEnthusiast). Derived outputs in t
 | Phase | Notebook | Report | Critic rounds |
 |---|---|---|---|
 | 1 · Business Understanding | ✅ | ✅ | 3 rounds (7 → 8 → 9/10) |
-| 2 · Data Understanding | ☐ | ☐ | 0 |
+| 2 · Data Understanding | ✅ | ✅ | 3 rounds (6 → 7.5 → 8.5/10) |
 | 3 · Data Preparation | ☐ | ☐ | 0 |
 | 4 · Modeling | ☐ | ☐ | 0 |
 | 5 · Evaluation | ☐ | ☐ | 0 |

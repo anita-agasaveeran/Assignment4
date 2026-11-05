@@ -268,14 +268,14 @@ At p > 0.5 the classifier is still 99.2% accurate. Dropping the 859 notes costs 
 - A pilot on about 100 retailer notes.
 
 ### 1.3 Determine data mining goals
-| ID | Data mining goal | Technique | Success criterion (lockbox, Phase 5) | Uncertainty | Supports |
+| ID | Data mining goal | Technique | Success criterion (lockbox, Phase 5; DM5 on the full corpus) | Uncertainty | Supports |
 |---|---|---|---|---|---|
 | DM1 | **Estimate the critic score** from note + origin + grape + vintage (no price, no critic) | Baselines vs ridge on TF-IDF, gradient boosting, optional transformer embeddings | MAE ≥ 10% below variety × country; plus BSC2 | LB of reduction > 5% | BO2 |
 | DM1b | **Signal beyond verdict words** | Same model with the frozen evaluative list masked | Masked MAE ≤ DM1 MAE + 0.15 (absolute, so it's stable even when DM1's reduction is small) | Point estimate | BO1, BO2 (A1 proxy) |
 | DM2 | **Rank ≤ $25 candidates** | DM1 model + log price (or a direct P(90+) classifier) | = BSC1; also k = 50/200 and pools of 500/2,000 | = BSC1 | BO1 |
 | DM3 | **Flavour profiles** | k-means / NMF on TF-IDF or embeddings; outlier notes checked | = BSC3; silhouette or topic coherence reported | = BSC3 | BO3 |
 | DM4 | **Descriptor ↔ grape links** | FP-Growth on descriptor sets + grape | ≥ 10 rules with lift ≥ 2 and support ≥ 0.5% in development data that keep lift ≥ 1.5 in the lockbox | Point estimate | BO3, BO5 |
-| DM5 | **Near-duplicates and similar wines** | MinHash LSH on note shingles | Recall ≥ 0.9 of exact-Jaccard ≥ 0.8 pairs on a 10k sample; precision ≥ 0.9 on 100 hand-checked flagged pairs | Point estimate | BO4 |
+| DM5 | **Near-duplicates and similar wines** | MinHash LSH on 5-word note shingles (128 permutations) | *Re-specified 2026-11-04 (Phase 2 → Phase 1 loop-back; text only, no scores). Original, superseded: ~~recall ≥ 0.9 of exact-Jaccard ≥ 0.8 pairs on a 10k sample; precision ≥ 0.9 on 100 hand-checked pairs~~ (unmeasurable: only 43 real pairs ≥ 0.5 exist).* On the **full corpus**, τ = 0.5: (a) **recall ≥ 0.90** on synthetic positives: 2,000 notes (seed 42), each copied with 2–8% of words replaced by random corpus words; positives = copies with exact Jaccard ≥ 0.5 (~1,670 expected); (b) **false-flag rate ≤ 1%** on 2,000 random pairs of distinct notes; (c) **precision ≥ 0.90** on all real flagged pairs, labelled before checking with this rule: a *true duplicate* means both reviews describe the same wine (same producer and cuvée, vintages within 1 year; spelling/field differences allowed) **or** one note is attached to a different wine (catalogue error). Two independent reviewer agents label; disagreements count as false. Parameters in `config.DM5_*` | Point estimate | BO4 |
 | DM6 | **Critic calibration** | Fixed / mixed effects: score ~ wine attributes + critic | Critic effects with 95% CIs; feeds H4 / BSC5 | As BSC5 | BO5 |
 
 **Outlier analysis** from the course template is a supporting step in Phases 2–3: price outliers (up to $3,300), odd vintages, unusually short or long notes.
@@ -307,10 +307,123 @@ Dates assume work started 2026-11-03. `instructions.txt` gives no due date. **Th
 - **IBM SPSS Modeler** (suggested in the assignment) has a CRISP-DM project view, but needs a licence, handles free text poorly and can't be shared as a runnable notebook, so the CRISP-DM structure is followed in the notebook and this report instead.
 
 ## 2. Data Understanding
+
+> **Revision 3**, after critic rounds 1 (6/10), 2 (7.5/10) and 3 (8.5/10, no major issues); see `critiques/phase2_data_understanding_round*.md`. Main changes:
+> - a target leak was found in the notes (671 barrel samples);
+> - the vintage rule is corrected;
+> - the noise floor is redone properly;
+> - grape synonyms and a colour map are frozen;
+> - near-duplicates are explored (leading to a DM5 loop-back to §1.3);
+> - identity and encoding checks are added.
+>
+> Phase 1's rule applies: anything that looks at **scores** uses development data only (102,104 reviews). Counts, categories and text structure may use all 119,988 unique reviews. All figures come from notebook §2.
+
 ### 2.1 Initial data collection report
+| Item | Detail |
+|---|---|
+| Source | Kaggle *Wine Reviews* (Zack Thoutt). Reviews scraped from WineEnthusiast.com, week of 2017-06-15 |
+| Licence | CC BY-NC-SA 4.0; derived outputs use the same licence |
+| Files received | `winemag-data-130k-v2.csv` (129,971 × 13) · `winemag-data-130k-v2.json` (same reviews, per the dataset page) · `winemag-data_first150k.csv` (older scrape: 150,930 rows, **no critic names**, 53,079 exact duplicates, ~40% of our notes also appear there, matched on note text) |
+| Used | **`winemag-data-130k-v2.csv` only.** It's the only file with critic names; SHA-256 verified |
+| Not used | JSON (redundant); 150k (no critics; mixing scrapes would double-count) |
+| Missing data that would help | Review dates, sales and price history, the retailer's own notes (A1 pilot), blind-tasting status |
+
 ### 2.2 Data description report
+| Column | Type | Non-null (raw) | Distinct (raw) | Role (Phase 1 R-1/R-2) |
+|---|---|---|---|---|
+| `points` | int | 100% | 21 (80–100) | **Target** |
+| `description` | text | 100% | 119,955 | Input (text) |
+| `country`, `province` | cat | 99.95% | 43 / 425 | Input |
+| `region_1`, `region_2` | cat | 83.7% / 38.9% | 1,229 / 17 | Input (`region_2` US-only) |
+| `variety` | cat | 100% | 707 | Input (raw label; `grape_canonical` added, §2.4c) |
+| `winery` | cat | 100% | 16,757 | Input (track record) |
+| `designation` | cat | 71.2% | 37,979 | Input |
+| `price` | float | 93.1% | 390 | Ranker input / value verdict only (labelled USD; not independently verified) |
+| `title` | text | 100% | 118,840 | Source of vintage. **Not a wine key** (§2.4c) |
+| `taster_name`, `taster_twitter_handle` | cat | 79.8% / 76.0% | 19 / 15 | **Excluded** as inputs; fold grouping |
+
+- **Notes:** 3–135 words (median 40).
+- **Long tails:** top 10 countries cover 96%; 501 of 707 variety labels have fewer than 20 reviews; **15,341 of 16,757 wineries have fewer than 20 reviews (56% of reviews)**.
+
 ### 2.3 Data exploration report
+**Scores and prices** (development data):
+- Mean 88.32, SD 3.16, integer-valued; 37.3% score 90+.
+- **Score heaping: critics avoid 89.** 88 has 12,509 reviews, 89 has 8,505 and 90 has 11,450. So the 90+ value label sits where critics round up, which supports Phase 1's A2 sensitivity at 88+ / 92+.
+- Price: median $25, 99th percentile $160.
+
+**Value wines** (≤ $25 candidates; 15.0% overall):
+- By country: Germany 30%, Portugal 21%, Australia 21%, New Zealand 20%, US 18%, Austria 17%, France 17%, Greece 17%, South Africa 11%, Spain 8%, Argentina 7%, Chile 6%, Italy 5%.
+- By variety: Riesling 28%, Gamay 27%, Portuguese Red 27%, Shiraz 27%, Pinot Gris 26%, Syrah 22% … Merlot 8%, Tempranillo 7%, Carmenère 7%, Pinot Grigio 4%. The full ≥ 300-candidate lists are in notebook §2.3g.
+- **These mix wine effects with critic effects:** critics specialise by country (O'Keefe Italy only; Schachner Spain and Chile; several US-only). **Pinot Gris (26%) and Pinot Grigio (4%) are the same grape:** the label carries market and style (Grigio 58% Italy, Gris 60% US). Descriptive only; H5, H6 and DM6 test these properly.
+
+**Tasting notes:**
+- **Length:** longer notes go with higher scores (ρ = 0.51).
+- **High-score words:** drinking-window years ("2022", "2030"), "decade", verdict words ("superb", "gorgeous") and prestige places ("Barolo", "premier").
+- **Low-score words:** "everyday", "watery", "bland", "simple", "pizza".
+- **⚠ The token "92" in the high-score list was a target leak** (§2.4a).
+
+**Other patterns:**
+- **Vintage:** 2004–2014 average about 88–89; 2000–02 and 2016 about 87.4. Median price rises with age, consistent with review timing (older vintages reviewed in 2017 are later, pricier releases).
+- **Designation:** a named designation averages 88.6 vs 87.6 without (H3 sanity check).
+
+**Near-duplicates (all reviews, text only):**
+- Across 119,955 distinct notes, exact Jaccard (after loose LSH candidates) gives 50 / **43** / 20 / 8 pairs at ≥ 0.4 / **0.5** / 0.7 / 0.8.
+- **Only about a third are the same wine relisted** ("Alentejano" vs "Alentejo"). Most are the same critic's note recycled or attached to a *different* wine (different producers, or a producer's red vs white). All pairs are within one fold, so there's no cross-fold leakage. Phase 3 flags these ~80 rows as possible label noise.
+- **Phase 1's DM5 can't be measured as written** (a 10k sample would hold fewer than one true pair).
+- → **Loop back to §1.3:** DM5 is re-specified there (original kept, struck through and dated). Full corpus; recall on ~1,670 synthetic positives (2–8% word edits, exact J ≥ 0.5, sized by simulation); false-flag rate on random pairs; precision on the 43 real pairs with a labelling rule fixed in advance.
+
 ### 2.4 Data quality report
+**2.4a The target is written into some notes.**
+- **What:** 671 development notes (all fold 0, Roger Voss **barrel samples**; including em-dash and "98-100" forms) open with the score range ("90–92. Barrel sample."). **The recorded score equals the midpoint 99.7% of the time** (MAE 0.008).
+- **Other text leaks:** 20 notes state a score ("rated 92 points", "90-point", "90+ rating"), 184 carry WineEnthusiast labels ("Best Buy", "Editors' Choice", "Cellar Selection"), and 333 mention a price ("$15", "10 bucks"). Regexes are limited to 80–100 so "14-15% alcohol" can't match (tested).
+- **Who it affects:** barrel samples are almost never priced (1.5%), so they barely touch the ≤ $25 shortlist.
+- **Effect on Phase 1:** removing them raises fold 0's MAE reduction from 32.7% to 34.9%, and folds 1/3/4 move by ≤ 0.2 pp. Phase 1 isn't inflated, and the targets stand.
+- **Decision:** drop barrel samples (671); strip explicit scores and verdict labels; replace prices with `_price_`.
+- **Mask residuals (a DM1b limitation; the frozen list is unchanged):** of 3,923 development 93+ notes with a 20xx year, 920 keep one after masking. 250 contain "decade" and 1,038 contain "N years". So the 87% DM1b retention is an upper bound, and Phase 4 adds a stricter mask as a sensitivity check.
+
+**2.4b The human noise floor**, done properly: pairwise, same **title + variety**, development data. One review = expected score + noise; σ = RMS(diff)/√2; a perfect predictor is within ±2 with P = 2Φ(2/σ) − 1.
+
+| Comparison | Price band | Pairs | Mean \|diff\| | Within ±2 (pairs) | Single-review σ | Ceiling within ±2 |
+|---|---|---|---|---|---|---|
+| Same critic | all | 728 | 1.53 | 79% | 1.45 | 0.83 |
+| Same critic | ≤ $25 | 304 | 1.62 | 77% | 1.49 | **0.82** |
+| Different critics | all | 39 | 2.26 | 64% | 2.17 | 0.64 |
+| Different critics | ≤ $25 | 20 | 1.70 | 80% | 1.57 | 0.80 (n tiny) |
+
+The Phase 1 model is scored on *unseen* critics, so the relevant ceiling lies between the cross-critic values (0.64 at all prices, n = 39; 0.80 at ≤ $25, n = 20) and the same-critic value (0.82): roughly **0.64–0.83**, on small, selected samples. The model's 0.69 is not "close to critics' own consistency" (the round-1 claim was wrong). There is likely, but uncertain, headroom.
+
+**2.4c Identity and encoding checks:**
+- **`title` isn't a wine key.** 250 of 934 repeat titles are different wines (e.g. red and white under one title), and 474 have different prices. Wine key = title + variety.
+- **Duplicated notes** (13 groups in development data, 33 overall) sit on different titles. Some are the same wine relisted, some are notes pasted onto another wine, and 2 are barrel samples.
+- **Grape synonyms.** `grape_canonical` merges 43 labels / 5,891 reviews (Shiraz → Syrah, Pinot Grigio → Pinot Gris, Garnacha → Grenache, …) from ampelographic synonyms. Raw `variety` stays for the frozen rules; the canonical grape is used for DM4, H5 and the app.
+- **Colour map, frozen now for H5:** `wine_colour(variety, title)`. Title style words (rosé, Brut / sparkling, Port) override the grape, and blends take the first-listed grape. Built from grape knowledge and title text only, before any colour × value view: **97.9%** coverage (59.0% red, 30.3% white, 4.3% sparkling, 3.5% rosé, 0.7% fortified).
+- **Encoding.** NBSP in 3,290 critic names (Krebiehl only; folds consistent), 22 titles, 15 wineries and 7 designations; mojibake in 5 cells across 3 fields; 29 winery names differ only by case or whitespace.
+- **Pseudo-provinces:** 1,921 rows ("France Other", "Other", province = country).
+- **Prices > $1,000:** hand-checked. "Château les Ormes Sorbet 2013 Médoc" at $3,300 and Blair 2013 Chardonnay at $2,013 (= vintage) are errors, and Knoll Smaragd at $1,100 is implausible. The first-growth Bordeaux and Burgundy prices are plausible.
+- **Vintage parser:** titles took years from winery names ("1912 Winemakers", "Guidi 1929") or brand/solera years after "NV". Corrected rule: strip the winery prefix; NV before the first year → non-vintage; else the **first** year. 17 titles change; pre-1990 vintages fall from 69 to **52, all genuine**. "Nearest the end" would pick planting years.
+- **Co-author pair across the lockbox:** Jenssen (lockbox) and DeSimone (fold 4) share @worldwineguys. A style classifier confuses them only 6–7% of the time, and they share no titles. A minor limitation.
+
+**Decisions (applied in Phase 3; none changes the frozen Phase 1 design or targets):**
+
+| Issue | Rows | Decision |
+|---|---|---|
+| Exact duplicates | 9,983 | Drop |
+| **Score in note (barrel samples)** | 671 | **Drop barrel samples** |
+| Explicit score / verdict label / price in note | 20 / 184 / 333 | Strip / strip / `_price_` token |
+| Duplicated note on different titles | 13 groups (dev) | Keep one row per note |
+| Repeat titles | 1,148 / 934 (250 different wines) | Key = title + variety; keep in training; R-3 test filter (evidence: 40 / 30 / 16 / 51 rows by development fold) |
+| Missing price (+3 implausible set missing) | 8,398 | Score models keep them; excluded from the ≤ $25 pool and the value verdict |
+| Anonymous critic | 24,917 | Training only; 859 dropped (R8) |
+| Missing country / province / variety; pseudo-provinces | 60; 1,921 | "Unknown" for models; frozen rules unchanged |
+| Missing designation / region | 28% / 16% | Missing indicator |
+| Vintage parse | 17 | New rule incl. NV guard (tested) |
+| Non-vintage | 4,285 | Flag |
+| Grape synonyms | 43 labels | `grape_canonical` (raw label for frozen rules) |
+| Encoding / winery case | see above | Normalise; case-fold winery keys for models (frozen winery rule keeps raw names; ≤ 29 groups affected) |
+| Notes < 10 words | 39 | Keep; flag |
+| No review date; co-author pair | – | Limitations |
+
+**Conclusion:** the data is real and fit for purpose once the barrel-sample leak and the identity issues are handled. None of these changes the frozen Phase 1 targets. The one change to a Phase 1 goal (DM5) is a documented loop-back.
 
 ## 3. Data Preparation
 ### 3.1 Rationale for inclusion / exclusion

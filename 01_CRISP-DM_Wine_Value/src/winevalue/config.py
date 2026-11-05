@@ -94,8 +94,18 @@ HYPOTHESES = {
     "H4": "Critics differ: SD of critic effects (score minus training-fitted variety x country expectation) > 0.5, LB > 0.5. "
           "Limitation: the lockbox has only 4 critics, which a winery bootstrap doesn't capture",
     "H5": "Among <= $25 wines, whites are more often value wines (90+) than reds: difference > 0, LB > 0. "
-          "Colour comes from a variety -> colour map frozen in Phase 3 (text only, before any lockbox use)",
+          "Colour from winevalue.grapes.wine_colour(variety, title), frozen in Phase 2 revision 3 (grape knowledge + title style words; text only, before any colour x value table or lockbox use)",
     "H6": "Among <= $25 wines, a strong winery track record (GroupMeanBaseline(keys=('winery',), shrink=20) on "
           "training >= 89) goes with a higher value-wine rate: difference > 0, LB > 0",
 }
 BSC5_MIN_REPLICATED = 4
+
+# --- DM5 (re-specified 2026-11-04 in a Phase 2 -> Phase 1 loop-back; text only, no scores) ---
+DM5_SHINGLE_WORDS = 5
+DM5_NUM_PERM = 128
+DM5_TAU = 0.5                 # near-duplicate = exact Jaccard >= 0.5 on 5-word shingles
+DM5_N_SYNTH = 2000            # synthetic copies, seed = SEED
+DM5_EDIT_RATE = (0.02, 0.08)  # share of words replaced by random corpus words; ~1,670 copies clear TAU (Phase 2 simulation)
+DM5_MIN_RECALL = 0.90         # on synthetic positives (exact J >= TAU)
+DM5_MAX_FALSE_FLAG = 0.01     # on 2,000 random pairs of distinct notes
+DM5_MIN_PRECISION = 0.90      # on all real flagged pairs, labelled with the rule in report section 1.3
