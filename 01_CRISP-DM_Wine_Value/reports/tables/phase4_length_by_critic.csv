@@ -1,0 +1,25 @@
+fold,critic,note length,MAE reduction
+0,Roger Voss,kept,0.3252321120704351
+0,Roger Voss,dropped,0.34196132385708267
+1,Jim Gordon,kept,0.4201138458343803
+1,Michael Schachner,kept,0.36216691719069927
+1,Jim Gordon,dropped,0.4038297649612671
+1,Michael Schachner,dropped,0.3258839749091902
+3,Anna Lee C. Iijima,kept,0.0344752306602738
+3,Joe Czerwinski,kept,0.2945869743800392
+3,Paul Gregutt,kept,-0.15198578078653213
+3,Anna Lee C. Iijima,dropped,0.04264164867050868
+3,Joe Czerwinski,dropped,0.3258511145166165
+3,Paul Gregutt,dropped,-0.019892781929833125
+4,Alexander Peartree,kept,0.5062887679444046
+4,Lauren Buzzeo,kept,0.3672710799370388
+4,Matt Kettmann,kept,0.35021915629567235
+4,Mike DeSimone,kept,-0.39719922800265484
+4,Susan Kostrzewa,kept,0.2665892367525372
+4,Virginie Boone,kept,0.38619214687877024
+4,Alexander Peartree,dropped,0.5181760196389883
+4,Lauren Buzzeo,dropped,0.43333586226616894
+4,Matt Kettmann,dropped,0.28625390277079577
+4,Mike DeSimone,dropped,-0.42470188520889995
+4,Susan Kostrzewa,dropped,0.2607659721417874
+4,Virginie Boone,dropped,0.362018442603256

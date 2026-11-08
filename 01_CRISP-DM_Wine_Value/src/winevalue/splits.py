@@ -79,27 +79,33 @@ def drop_titles_seen_in_training(test: pd.DataFrame, train: pd.DataFrame) -> pd.
     return test[~test["title"].isin(set(train["title"]))]
 
 
-def anon_lockbox_like(df: pd.DataFrame, threshold: float | None = None, seed: int = SEED,
-                      critics=None) -> pd.Index:
-    """Anonymous reviews whose writing style a text classifier attributes to one of ``critics`` (Phase 1 R8).
+def anon_attribution(df: pd.DataFrame, seed: int = SEED) -> pd.DataFrame:
+    """Top-guess critic and probability for every anonymous note, from a text classifier on named notes (Phase 1 R8).
 
-    ``critics`` defaults to the frozen lockbox critics (``config.LOCKBOX_CRITICS``); Phase 4 CV passes each development
-    fold's critics instead (pre-registered in report §3.5; critic round 2 N7). Uses note text and critic names only
-    (no scores). The default threshold is config.ATTRIBUTION_THRESHOLD.
+    Uses note text and critic names only (no scores). Returns columns ``critic`` (normalised name) and ``p``.
     """
     from sklearn.feature_extraction.text import TfidfVectorizer
     from sklearn.linear_model import SGDClassifier
     from sklearn.model_selection import train_test_split
-    from .config import ATTRIBUTION_THRESHOLD
-    threshold = ATTRIBUTION_THRESHOLD if threshold is None else threshold
-    from .config import LOCKBOX_CRITICS
-    critics = LOCKBOX_CRITICS if critics is None else list(critics)
     named = df[df["taster_name"].notna()]
     tr, _ = train_test_split(named, test_size=0.2, random_state=seed, stratify=named["taster_name"])
     vec = TfidfVectorizer(min_df=3, ngram_range=(1, 2), max_features=100_000, sublinear_tf=True).fit(tr["description"])
     clf = SGDClassifier(loss="log_loss", alpha=2e-6, max_iter=30, random_state=seed).fit(vec.transform(tr["description"]), tr["taster_name"])
     anon = df[df["taster_name"].isna()]
     proba = clf.predict_proba(vec.transform(anon["description"]))
-    top_critic = clf.classes_[proba.argmax(1)]
-    is_lockbox = np.isin(_norm_name(pd.Series(top_critic)).to_numpy(), critics)
-    return anon.index[(proba.max(1) > threshold) & is_lockbox]
+    return pd.DataFrame({"critic": _norm_name(pd.Series(clf.classes_[proba.argmax(1)])).to_numpy(), "p": proba.max(1)}, index=anon.index)
+
+
+def anon_lockbox_like(df: pd.DataFrame, threshold: float | None = None, seed: int = SEED,
+                      critics=None, attribution: pd.DataFrame | None = None) -> pd.Index:
+    """Anonymous reviews whose writing style a text classifier attributes to one of ``critics`` (Phase 1 R8).
+
+    ``critics`` defaults to the frozen lockbox critics (``config.LOCKBOX_CRITICS``); Phase 4 CV passes each development
+    fold's critics instead (pre-registered in report §3.5; critic round 2 N7). Uses note text and critic names only
+    (no scores). The default threshold is config.ATTRIBUTION_THRESHOLD.
+    """
+    from .config import ATTRIBUTION_THRESHOLD, LOCKBOX_CRITICS
+    threshold = ATTRIBUTION_THRESHOLD if threshold is None else threshold
+    critics = LOCKBOX_CRITICS if critics is None else list(critics)
+    a = anon_attribution(df, seed) if attribution is None else attribution
+    return a.index[(a["p"] > threshold) & a["critic"].isin(critics)]

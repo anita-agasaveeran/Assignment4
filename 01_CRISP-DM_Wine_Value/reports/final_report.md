@@ -74,7 +74,7 @@ Critics specialise by region, so the split also holds out regions. The coverage 
 - Measured **once**, in Phase 5, on the lockbox critics. Simple rules are scored on the same data.
 - **Pass rule:** the point estimate meets the target **and** the stated lower bound (LB) holds.
 - **LBs** are one-sided 90%, from 500 bootstrap resamples of **wineries**.
-- Every target is met by **every** development fold, including fold 3.
+- Every target is met by **every** development fold, including fold 3. *(Phase 4 note, 2026-11-07: this holds for the untuned feasibility models. Under Phase 4's per-fold R8 filter, plain ridge fails fold 3; the selected calibrated ridge meets every target in every fold, §4.4.)*
 
 | ID | Criterion | Target | Lower-bound condition | Weakest development fold |
 |---|---|---|---|---|
@@ -539,10 +539,340 @@ The Phase 1 model is scored on *unseen* critics, so the relevant ceiling lies be
   - DM5(a), reported with recall in the 0.5–0.6 Jaccard band.
 
 ## 4. Modeling
+
+> **Revision 4** (after critic rounds 1–3, 2026-11-07; revisions 3 and 4 changed interpretation and diagnostics only, no model or selection). Development data only; the lockbox (fold 2) stays sealed. Everything is in notebook §4 (saved with outputs) and `winevalue.cv`, `scoring`, `evaluate`, `clustering`, `descriptors`, `insights`. The result tables and fold predictions are in `reports/tables/phase4_*`. The order of every fit is in [`reports/phase4_run_log.md`](phase4_run_log.md).
+>
+> **What changed in revision 2, and why it matters:** the DM1 model and the DM3 vocabulary were both re-chosen after the outer-fold results of revision 1 had been seen. The new rules were written down before the new runs, and DM1 is now chosen on inner folds only. But these are **post-hoc revised settings** (CRISP-DM 4.4), not fresh tests. The lockbox remains the only unbiased estimate.
+
+**Phase 4 in brief:**
+- **DM1 / BSC2:** the selected score model is a **calibrated ridge**: the ridge prediction, rescaled by two numbers (a + b × score) fitted on out-of-fold predictions. It had the lowest inner critic-held-out MAE (1.762) and meets every DM1 and BSC2 target in every fold. On fold 3 it cuts MAE by **23.0%** (LB 21.9%). The revision 1 choice, the stack, came out worse (16.3%); adding origin inputs made it worse in all four inner folds, for reasons not established.
+- **Why the calibration helps, and where it doesn't:** every held-out fold is under-predicted by plain ridge, and so are **10 of 13 writers (96% of reviews)**. Two pooled calibration numbers shift scores up by 0.6–0.9 points: review-weighted writer bias falls from 0.98 to 0.38 points, and mean outer MAE from 1.83 to 1.66. The shift **hurts the writers ridge already over-predicts** (Buzzeo −13.3 pp of reduction, Dykes −12.2, Kostrzewa −9.9) and slightly overshoots two others. Knowing each critic's own level would cut MAE by a further **6%**.
+- **The per-fold R8 filter** removes notes that matter. On fold 3, about two-thirds of the plain ridge's drop is specific to the attributed notes, and a third is plain data loss. Across the filter variants the selected model moves by about 2 points of reduction at most. The gap to Phase 1's 11.9% comes from the change of inputs and model (α alone is about 1.8 pp), not from data or leakage. Note length is involved on fold 3, but the mechanism is **not established**.
+- **DM2 / BSC1:** ridge + log price is still the selection (P@100 0.63–0.68, 1.55–1.96× the best simple rule, top-10% lift LB ≥ 1.47). It now has a frozen **P(90+)** and **score band** for the app.
+- **DM3:** the profiles now use only the frozen aroma lexicon. They're stable across producers (10 of 10 winery splits) but **not shown to be independent of writers** (critic-disjoint Jaccard 0.23, bar 0.5).
+- **DM6:** the §1.3 model (fixed effects for wine and critic) gives a critic SD of **1.49** points. With a richer wine description it gives **0.93**, and the two rankings correlate at only 0.56. Six critics have a clear, same-sign effect in both.
+- **H1–H6** all hold in development data, but H5 changes sign across folds (−7.8 to +6.9 pp) and within critics (−1.1 pp).
+
 ### 4.1 Modeling techniques & assumptions
+| Goal | Candidates | Why | Key assumptions (and where they're tested) |
+|---|---|---|---|
+| DM1 score (price-free) | Baselines (global mean, **variety × country**); **ridge** on TF-IDF of `note` + one-hot origin, grape, colour + vintage, length, flags; **calibrated ridge** (a + b × ridge score, fitted by least squares on out-of-fold scores of all training rows, or of named rows only); **stack** (LightGBM on the out-of-fold ridge score + the structured inputs) **with or without origin** | Ridge is the transparent text baseline. Calibration is the smallest model that can carry a new writer's average level, and the stack the most flexible. Calibrated ridge and the no-origin stack were added in revision 2 | (a) A new writer differs from training writers partly by a level offset: **partly supported** (4.4: held-out named groups +0.35 to +2.08; per-writer offsets after calibration explain about 6% of the remaining MAE). **The selected model's working assumption:** a new house's writers sit, on average, above the ridge prediction by about the pooled shift (+0.6–0.9 points). That holds for 10 of 13 development writers, not for all. (b) The vocabulary transfers across writers: **partly** (note length transfers poorly to some writers, 4.4). (c) **For Italy, the training data is 96.4% anonymous notes**, and the lockbox is 54% Italy (4.2): the model relies on anonymous notes resembling a named critic. **Not testable in development**; Phase 5 reports Italy vs non-Italy |
+| DM1b | The DM1 candidates refit on masked text: frozen list; round-1 list; frozen + strict price mask; and, as a stress test, the 200 strongest ridge words per fold | The MAE increase isolates how much the model leans on the masked words | Masking removes the verdict, not the description |
+| DM2 ranker | **Ridge + log price**; **stack classifier** P(90+) + log price; the same **+ winery track record** | Only order within a pool matters, so α is now tuned on inner pool precision | Price and the winery's record are known at decision time |
+| DM3 profiles | **NMF** and **k-means**, k = 6–15, on three vocabularies (pre-registered 5,000-term TF-IDF; revised, minus grape names and verdict words; **lexicon**, the 139 frozen aroma terms), each fitted on all notes or a writer-capped sample | NMF gives additive term weights; the lexicon keeps writers' non-flavour habits out | "Stable across producers" is necessary but not sufficient for meaning; writer independence is tested separately (4.4) |
+| DM4 rules | **FP-Growth** on descriptor items + grape | Exhaustive for ~180 items | A fixed lexicon captures descriptors; lift corrects for grape popularity |
+| DM5 | MinHash LSH + exact Jaccard (Phase 3) | Fixed in Phase 3 | – |
+| DM6 | **§1.3 model:** score = wine cell (fixed effect) + critic (fixed effect), within-cell OLS on all named development rows, winery-clustered SEs; two wine descriptions (A: variety × country; B: variety × province + log price) | One common baseline for every critic, unlike revision 1's per-fold residuals | Critics are compared only inside cells that two or more of them reviewed. Effects still include whatever the cell definition leaves out |
+
+**Not run: transformer embeddings** (optional in §1.3). This is a scope and compute decision. The project runs end to end on a laptop CPU and a free Colab runtime, and the TF-IDF models already meet every development target. Whether embeddings would transfer better to new writers is untested. §1.4's fallback scope is about DM5 and DM6, so it doesn't apply here.
+
 ### 4.2 Test design
+- **Outer CV:** each development critic fold (0, 1, 3, 4) is held out in turn. **The lockbox never enters Phase 4.**
+- **Training set:** the other development folds + anonymous notes, **minus anonymous notes attributed (p > 0.5) to the held-out fold's critics** (per-fold R8).
+- **Test set:** the held-out fold minus titles seen in training (R-3).
+- **Inner CV (revision 2):**
+  - the remaining named folds;
+  - each anonymous note goes to the inner fold of its **top-guess critic**, so it's held out with its likely writer (top guess outside the inner folds: random);
+  - R-3 applies to inner validation;
+  - **all inner scores are on named rows**, so they are critic-held-out;
+  - caveat: for inner fold g, the calibration and the stack's inner curve use other folds' out-of-fold scores, whose ridge models saw g's labels. That mildly favours calibrated and stacked candidates over plain ridge. It can't change ridge vs calibrated ridge (1.762 vs 1.917), but the margin over the no-origin stack is only 0.012.
+- **Tuning:**
+  - ridge α ∈ {0.25, 0.5, 1, 2, 4, 8}: inner MAE (DM1), or inner top-10% pool precision (ranker);
+  - LightGBM: leaves {15, 63} × trees {25, 50, 100, 200, 400} on one **pooled inner curve**, which replaces early stopping and the mean best iteration.
+- **Metrics:**
+  - as pre-registered, with one-sided 90% winery-cluster bootstrap lower bounds (500 resamples);
+  - these LBs hold the writers fixed, so they **don't** bound new-writer risk; see the per-critic table.
+- **Selection:**
+  - DM1 (revision 2, written before the runs): lowest mean inner MAE, within 0.01 the simplest, and the winner must meet the targets in every outer fold;
+  - DM2 (unchanged): best mean outer P@100 among rankers meeting BSC1 in every fold, within 0.01 the simplest.
+- **Provenance:** the revision 1 design was written at 22:29 on Nov 4, before the first fit at 22:30, per the session record. No commit exists from before fitting, and two fold-3 looks happened before the full run ([run log](phase4_run_log.md)). The Phase 4 commit is tagged before any Phase 5 run.
+
+| Held-out fold | Critics | Anonymous dropped (p > 0.5) | Anonymous with top guess here | Training rows | Test rows (after R-3) | ≤ $25 pool |
+|---|---|---|---|---|---|---|
+| 0 | Roger Voss | 2,163 | 3,961 | 75,492 | 22,836 | 10,786 |
+| 1 | Jim Gordon, Michael Schachner | 1,775 | 3,991 | 80,945 | 17,781 | 12,658 |
+| 3 | 6 critics (Gregutt, Czerwinski, Iijima, …) | 4,189 | 8,596 | 78,541 | 17,784 | 9,024 |
+| 4 | 6 critics (Boone, Kettmann, Buzzeo, …) | 3,022 | 6,263 | 79,508 | 17,949 | 6,134 |
+
+- **Size:** CV training sets are **19–25% smaller** than the Phase 5 training set (100,530 rows).
+- **Why these counts differ from §3.5's (2,048 / 1,823 / 4,039 / 3,095):** §3.5's classifier was fitted on the table before preparation, and this one on the prepared table.
+- **Fold 3 isn't a fair lockbox proxy for this filter:** 35.7% of anonymous notes have a fold-3 top guess, against 5.1% for the lockbox critics.
+- **Phase 5 sensitivity set, now frozen as an ID list** (`reports/tables/phase5_sensitivity_anon_ids.csv`): 1,234 anonymous development notes whose top guess is a lockbox critic. This replaces the "1,257" from the earlier classifier fit. On this refit, 67 of them have p > 0.5 and are still in the 100,530-row Phase 5 training set, because the pre-registered lockbox filter used the Phase 3 classifier. The sensitivity run covers them.
+- **Lockbox exposure (counts only):**
+  - Tuscany, Piedmont, Veneto, Sicily & Sardinia, Central Italy, Southern Italy and Lombardy are 95–100% anonymous in development data and make up 8,557 lockbox rows;
+  - Washington (4,075 lockbox rows) is 0.2% anonymous.
+
 ### 4.3 Parameter settings, models & model descriptions
-### 4.4 Model assessment & revised parameters
+**Tuned settings** (inner folds only):
+
+| Fold | Ridge α (DM1) | Ridge α (ranker) | Calibration a / b | Shift at score 88 | Stack leaves / trees | Ranker stack |
+|---|---|---|---|---|---|---|
+| 0 | 1.0 | 4.0 | 6.15 / 0.937 | +0.63 | 15 / 50 | 63 / 50 |
+| 1 | 1.0 | 2.0 | 9.42 / 0.902 | +0.81 | 15 / 25 | 15 / 50 |
+| 3 | 2.0 | 8.0 | 4.75 / 0.956 | +0.86 | 15 / 50 | 63 / 50 |
+| 4 | 1.0 | 2.0 | 10.69 / 0.887 | +0.75 | 15 / 50 | 15 / 50 |
+
+- **Ridge α:** the inner MAE curve is flat between 1 and 2 in every fold, so the extended grid didn't move the DM1 α off the old edge. The ranker's inner precision rises to α = 4–8 in folds 0 and 3 (the old grid cut those short), and peaks at an interior α = 2 in folds 1 and 4.
+- **Stack:** the pooled curve picks 25–50 trees everywhere.
+- **Grid edges, left as they are:**
+  - the ranker's α = 8 in fold 3 is the new top edge (inner precision 0.634 at 4, 0.635 at 8, so the curve is flat);
+  - the rejected stack's 25 trees in fold 1 is the bottom edge;
+  - LightGBM uses an L2 objective for an MAE target, and `objective="l1"` wasn't tried. Neither model is selected.
+
+**Model descriptions:**
+- **Calibrated ridge (selected DM1):**
+  - the ridge prediction, raised by about **0.6–0.9 points** around a typical score and slightly compressed (b = 0.89–0.96);
+  - the two numbers come from out-of-fold predictions, where every named row's writer was held out;
+  - the ridge leans on evaluative words ("beautiful", "gorgeous", "superb" raise it; "lacks", "strange", "sour", "odd", "watery" lower it), drinking windows ("2030", "drink through") and note length.
+- **Ridge + log price (selected DM2):**
+  - the same inputs plus standardised log price (0.92 points per SD of log price);
+  - the score is only used to order wines inside a pool.
+  - **P(90+)** is a logistic map of its out-of-fold score fitted on training ≤ $25 rows.
+  - **Score band** is the DM1 score ± the 80th percentile of the out-of-fold absolute error on named rows (±2.6–2.8 points).
+- **Stack (rejected):** 76% of its gain comes from the ridge score, 11% from province, 9% from length. The "ridge score" is the full ridge (text + structured inputs), so the stack sees the structured inputs twice.
+- **NMF profiles (DM3):** each profile is a non-negative weight over the 139 lexicon terms; a note's profile is its largest weight. 6.0% of notes contain no lexicon term and get no profile.
+- **FP-Growth rules (DM4):** {descriptors} → {grape}, with support ≥ 0.5% and lift ≥ 2, from the item table.
+- **Saved models:** `reports/tables/phase4_fold_predictions.csv.gz` holds every test-row prediction of the baseline, ridge, the selected DM1, the stack and the selected ranker. Phase 5 refits the final models on all development data, and Phase 6 saves the pipeline.
+
+### 4.4 Model assessment & revised parameter settings
+**DM1 / BSC2: price-free score models** (MAE · reduction vs variety × country (90% LB) · ±2 accuracy on ≤ $25 wines, gain in pp):
+
+| Model | Fold 0 | Fold 1 | Fold 3 | Fold 4 | Mean inner MAE | Mean outer MAE | Meets in every fold |
+|---|---|---|---|---|---|---|---|
+| Variety × country | 2.67 | 2.63 | 2.26 | 2.51 | – | 2.52 | – |
+| Ridge | 1.80 · 32.5% · 0.71, +16.6 | 1.65 · 37.3% · 0.72, +26.5 | **2.23 · 1.4% (LB −0.2) · 0.55, −0.6** | 1.62 · 35.4% · 0.73, +19.1 | 1.917 | 1.827 | ✗ (3 of 4) |
+| **Calibrated ridge, all OOF (selected)** | 1.76 · 34.2% (33.1) · 0.67, +12.3 | 1.51 · 42.8% (42.2) · 0.74, +27.9 | **1.74 · 23.0% (21.9) · 0.69, +12.7** | 1.62 · 35.7% (34.9) · 0.65, +10.8 | **1.762** | 1.655 | ✅ |
+| Stack, no origin | 1.74 · 34.7% · 0.71, +16.0 | 1.63 · 38.2% · 0.68, +21.9 | 1.69 · 25.4% · 0.71, +15.4 | 1.60 · 36.2% · 0.67, +13.0 | 1.774 | 1.665 | ✅ |
+| Calibrated ridge, named OOF | 1.78 · 33.3% · 0.64, +9.0 | 1.56 · 40.7% · 0.70, +24.4 | 1.65 · 27.3% · 0.71, +14.5 | 1.66 · 34.0% · 0.61, +6.5 | 1.785 | 1.662 | ✅ |
+| Stack (revision 1 choice) | 1.81 · 32.2% · 0.72, +17.0 | 1.80 · 31.5% · 0.65, +19.1 | 1.89 · 16.3% · 0.67, +11.4 | 1.57 · 37.7% · 0.72, +17.9 | 1.869 | 1.767 | ✅ |
+
+- **Selection (revision 2 rule):** calibrated ridge (all OOF) has the lowest inner MAE (1.762, next 1.774) and meets every target in every outer fold. Its outer mean is also the lowest, but the outer folds didn't choose it.
+- **All LB conditions hold for the selected model:** reduction LBs 21.9–42.2%; ±2 gain LBs +9.6 to +27.1 pp.
+- **Trade-off:** calibration lowers MAE but compresses the scale, so ±2 accuracy on ≤ $25 wines drops in folds 0 and 4 (0.71 → 0.67, 0.73 → 0.65). It stays above 0.60.
+- **Why the stack lost:** repairing the inner folds didn't rescue it. Adding origin worsens the stack in all four inner folds and in three of four outer folds (fold 3: 16.3% with origin, 25.4% without; fold 4 is the exception). **Why is not established.** Anonymous notes' near-zero out-of-fold residuals can't be read as "no level gap", because anonymous rows aren't reliably writer-held-out.
+
+**DM1b:**
+- masking the frozen verdict list raises the selected model's MAE by **0.07 / 0.04 / 0.01 / 0.04** (target ≤ 0.15), and the round-1 list and strict price mask change little;
+- with the frozen mask applied, the model still cuts MAE by 31.7 / 41.1 / 22.5 / 34.2% (LB 21.4% on fold 3);
+- **stress test** (reported only): masking each fold's 200 strongest ridge words, including non-listed ones like "odd", "weird", "disappointing", costs up to **0.17**. Fold-3 reduction is then 18.9%. The model does lean on evaluative language beyond the frozen list, which matters if a new house's writers phrase verdicts differently.
+
+**Error analysis.**
+- **Level gap:**
+  - mean out-of-fold residual is **+0.35 to +2.08** for every named fold held out of training (anonymous rows: −0.02 to −0.05, but they aren't reliably writer-held-out, so this isn't evidence about anonymous writers' level);
+  - the pooled calibration recovers most of this: mean outer MAE 1.83 (ridge) → 1.66;
+  - ridge trained on named folds only still under-predicts in all four folds (bias −1.05 / −0.76 / −2.33 / −0.27), so the gap isn't caused by anonymous notes.
+- **Per critic** (MAE reduction, selected model):
+  - Gregutt **15.5%** (half of fold 3), Iijima 26.2%, Czerwinski 34.3%;
+  - DeSimone **−1.0%** (fold 4, 461 reviews);
+  - Kostrzewa 16.8%, Buzzeo 23.4%;
+  - all others 34–52%.
+  - So the fold-level LBs don't bound what happens with one new writer. O'Keefe writes 50% of the lockbox pool (counts only).
+- **What the pooled calibration does to each writer** (ridge → calibrated, MAE reduction and bias; writers with ≥ 30 test reviews):
+  - helps the under-predicted: Gregutt −15.2% → 15.5% (bias −2.56 → −1.63), DeSimone −39.7% → −1.0%, Iijima 3.4% → 26.2%, Schachner 36.2% → 43.2%, Czerwinski, Kettmann, Voss, Peartree;
+  - hurts those ridge already over-predicts: Buzzeo 36.7% → 23.4% (+0.72 → +1.43), Dykes 50.3% → 38.1%, Kostrzewa 26.7% → 16.8% (+0.18 → +1.07);
+  - slightly overshoots two others: Gordon −1.2 pp, Boone −0.8 pp;
+  - fold 3's bias only halves (−1.84 → −0.93).
+- **Knowing each critic's average level** after calibration would cut the review-weighted MAE from 1.66 to **1.56** (6%). Per-writer offsets range from −1.7 to +1.4, but they're a modest part of the remaining error, and segment differences (fortified 1.99 vs Chile 1.40) are about as large.
+- **By segment:** red, white, rosé and sparkling 1.50–1.69; fortified hardest (1.99, n = 748). Of the six largest countries, Chile is easiest (1.40) and France and Portugal hardest (1.74).
+- **Note length** (diagnostic, found on an outer fold, so **not acted on**). Ridge MAE reduction with and without `n_words` on each design training set:
+
+| Fold | With length | Without length | Bias with / without |
+|---|---|---|---|
+| 0 | 32.5% | 34.2% | −0.65 / −0.16 |
+| 1 | 37.3% | 34.0% | −0.87 / −0.95 |
+| 3 | 1.4% | 9.3% | −1.84 / −1.52 |
+| 4 | 35.4% | 32.5% | −0.48 / −0.50 |
+
+  - Dropping length helps folds 0 and 3 and hurts folds 1 and 4.
+  - The fold-3 gain is mostly Gregutt (−15.2% → −2.0%).
+  - The per-critic gains don't track the per-critic length slopes: Kostrzewa and DeSimone have the flattest slopes (0.59 and 0.77 points per 10 words) and don't gain. Those slopes are marginal, not the model's partial coefficient.
+  - Dropping length also changes bias (fold 0: −0.65 → −0.16), so length and level are entangled.
+  - **The mechanism is not established.** The Phase 5 sensitivity "calibrated ridge without length" is exploratory.
+
+**What the per-fold R8 filter actually did** (MAE reduction: ridge / selected model; matched control = the same number of non-attributed anonymous notes dropped, matched on province, mean of 3 draws):
+
+| Training set | Fold 0 | Fold 1 | Fold 3 | Fold 4 |
+|---|---|---|---|---|
+| Per-fold R8 (design) | 32.5 / 34.2% | 37.3 / 42.8% | 1.4 / 23.0% | 35.4 / 35.7% |
+| No filter | 32.7 / 34.5% | 38.4 / 42.9% | 7.1 / 25.1% | 35.5 / 36.2% |
+| Matched control | 32.6 / 34.2% | 39.1 / 43.1% | 5.1 / 24.8% | 35.1 / 35.6% |
+| All top-guess notes dropped (Phase 5 sensitivity analogue) | 32.4 / 34.0% | 37.6 / 42.9% | 0.1 / 22.9% | 35.2 / 35.1% |
+| Named folds only | 27.0 / 30.8% | 41.7 / 40.9% | −15.0 / 24.6% | 32.1 / 29.0% |
+
+- **Decomposition** (no filter − matched control = data loss; matched control − design = specific to the attributed notes):
+  - fold-3 ridge: **2.0 pp** data loss and **3.7 pp** attribution-specific, so about two-thirds of the drop comes from the attributed notes (control draws 4.6–5.6%);
+  - fold-3 selected model: 0.3 pp and 1.8 pp;
+  - folds 0 and 4: both parts below 0.6 pp for either model;
+  - fold 1 ridge: −0.8 pp data loss and 1.9 pp attribution-specific.
+- **What that means:** the attributed notes carry something about their writers that a random sample doesn't. Removing them costs the plain ridge on fold 3, which is what the filter is for. Across the filter variants (design, no filter, matched control, all top-guess dropped) the selected model moves by at most 2.2 pp on fold 3 (22.9–25.1%).
+- **Phase 1's 11.9% on fold 3**, rebuilt one change at a time:
+
+| Step | Fold-3 reduction |
+|---|---|
+| Phase 1 as run | 11.9% |
+| + Phase 3 rows | 12.3% |
+| + Phase 3 cleaned text | 12.4% |
+| + Phase 4 inputs and tuned ridge | 7.1% |
+
+  Neither the Phase 3 rows nor the cleaned text explain the gap; the change of inputs, TF-IDF set-up and α does (α alone moves the no-filter fold 3 from 8.9% at α = 1 to 7.1% at α = 2). On fold 3, dropping length more than closes it (13.9% at α = 2, 15.2% at α = 1), but it hurts folds 1 and 4 (table above). Revision 1's "optimism found and fixed" was wrong.
+
+**DM2 / BSC1: rankers** (expected P@100 in 200 cycles of 1,000 ≤ $25 candidates · lift vs the best frozen simple rule · top-10% lift LB):
+
+| Ranker | Fold 0 | Fold 1 | Fold 3 | Fold 4 | Mean P@100 |
+|---|---|---|---|---|---|
+| Value base rate in pool | 0.19 | 0.10 | 0.22 | 0.19 | – |
+| Best simple rule | price 0.42 | price 0.34 | winery then price 0.35 | winery then price 0.38 | – |
+| **Ridge + log price (selected)** | 0.65 · 1.55× · 1.47 | 0.63 · 1.85× · 1.76 | 0.68 · 1.96× · 1.77 | 0.64 · 1.69× · 1.55 | **0.649** |
+| Stack P(90+) + log price | 0.64 · 1.54× · 1.46 | 0.61 · 1.80× · 1.72 | 0.69 · 2.00× · 1.82 | 0.67 · 1.77× · 1.62 | 0.655 |
+| … + winery track record | 0.64 · 1.53× · 1.45 | 0.62 · 1.81× · 1.74 | 0.69 · 2.00× · 1.83 | 0.67 · 1.76× · 1.62 | 0.654 |
+
+- **Selection:** all three meet BSC1 in every fold and sit within 0.01 (0.649 vs 0.655), so the simplest wins.
+- **Sensitivity (mean over folds):**
+  - P@50 = 0.76 and P@200 = 0.52 with 1,000 candidates;
+  - P@100 = 0.52 with 500 candidates and 0.76 with 2,000;
+  - the simple rules stay at 0.27–0.38.
+- **Writer mix matters for ranking too.** In a one-writer pool (fold 0), a writer's level can't change the order. In mixed pools it can:
+  - fold 3's top 10% is 55% Czerwinski (30% of the pool), but only 26% Gregutt (41% of the pool, highest value rate);
+  - if each critic's level were known, P@100 would rise from 0.68 to **0.74** (fold 3) and from 0.64 to **0.67** (fold 4). This is an oracle, not available in use.
+  - The lockbox mixes four critics, so a similar loss can apply there; Phase 5 reports the shortlist writer mix.
+- **BSC4 outputs, frozen before Phase 5:**
+
+| Fold | Brier (base rate) | Mean P(90+) vs value rate | Band half-width | Band coverage |
+|---|---|---|---|---|
+| 0 | 0.109 (0.151) | 0.18 vs 0.19 | 2.6 | 0.77 |
+| 1 | 0.054 (0.091) | 0.12 vs 0.10 | 2.8 | 0.87 |
+| 3 | 0.140 (0.173) | 0.14 vs 0.22 | 2.6 | 0.78 |
+| 4 | 0.124 (0.156) | 0.25 vs 0.19 | 2.7 | 0.83 |
+
+  - **P(90+):** pooled reliability is close: predicted 0.04 / 0.14 / 0.29 / 0.49 / 0.69 / 0.87 against actual 0.04 / 0.16 / 0.31 / 0.51 / 0.68 / 0.85 by bin. Per fold it inherits the writer level (fold 3 under, fold 4 over).
+  - **The 80% band covers 77–87%.**
+
+**DM3: flavour profiles (revision 2).**
+- **Revision 1's rule rested on one split.** On its own winery split, the pre-registered vocabulary passes (min Jaccard 0.538). Across 10 splits the minimum is 0.000 in one, and every vocabulary collapses on **critic-disjoint** splits.
+- **Settings at their chosen k** (NMF; k-means fails the seed rule in every setting):
+
+| Vocabulary · fit set | k | Splits passing (of 10) | Mean matched Jaccard | Smallest profile | Critic-disjoint mean Jaccard |
+|---|---|---|---|---|---|
+| Pre-registered · all | 8 | 9 | 0.85 | 6.2% | 0.15 |
+| Pre-registered · writer-capped | 7 | 7 (fails) | 0.75 | 6.3% | 0.18 |
+| Revised · all | 8 | 8 | 0.75 | 9.8% | 0.13 |
+| Revised · writer-capped | 7 | 10 | 0.82 | 9.9% | 0.13 |
+| **Lexicon · all (selected)** | **8** | **10** | **0.80** | **7.6%** | **0.23** |
+| Lexicon · writer-capped | 9 | 8 | 0.74 | 6.3% | 0.21 |
+
+- **Selected by the rule** (highest critic-disjoint mean among settings passing the seed rule): **lexicon, all notes, NMF, k = 8**.
+- **BSC3 stability condition:** passes across producers (every split's minimum Jaccard ≥ 0.667).
+- **Writer independence: not shown.** No setting reaches 0.5 on critic-disjoint splits. The chance level for matched top-10 sets from the lexicon is 0.098 (uniform) and **0.174** (weighted by document frequency; 95th percentile 0.209). So 0.23 is barely above chance, and one critic-disjoint split (0.194) is inside it. **The profiles barely reproduce across writers.** BSC3's blind naming may pass on development profiles and still not describe how a new house's writers group wines.
+- **Less writer-led than before:**
+  - Cramér's V with critic is **0.17**, against 0.37 for the revised vocabulary, and colour now carries more (0.36 vs 0.30);
+  - the largest writer share in any profile is 38% (Voss, base 20%), down from 76%.
+- **Profiles** (first five top terms, verbatim; full lists in the notebook):
+  1. cherry, black cherry, chocolate, herb, tobacco (7.6%);
+  2. apple, lemon, pear, peach, lime (21.4%);
+  3. blackberry, chocolate, cassis, pepper, black currant (13.2%);
+  4. spice, red fruit, black fruit, pepper, baking spice (12.2%);
+  5. plum, herbal, earthy, herb, chocolate (12.3%);
+  6. oak, vanilla, smoky, toasty, toast (13.3%);
+  7. citrus, mineral, tropical, melon, stone fruit (9.4%);
+  8. raspberry, strawberry, jammy, cranberry, pepper (10.7%).
+- **Fit quality:**
+  - cosine silhouette 0.08;
+  - UMass coherence −2.4 to −3.3;
+  - 6.0% of notes have no lexicon term (generic notes such as "ripe and fruity … firm tannins") and get no profile;
+  - the weakest-fitting 1% include notes that mix many descriptors (five examples in the notebook).
+- **Phase 5:** the blind naming test runs on the **primary** (lexicon) and **secondary** (revised vocabulary) settings, declared now. **BSC3 is decided on the primary only;** the secondary is strongly writer-led (V 0.37; one profile 76% Voss) and can't rescue a failure. Reviewers get term lists only. A naming pass does not establish writer independence.
+
+**DM4: descriptor → grape rules.**
+- **88 rules** (target ≥ 10). Of these:
+  - 84 remain after dropping rules no better than a parent;
+  - 53 have confidence ≥ 0.20 (minimum 0.025).
+- **Strongest by confidence:** oak + pineapple → Chardonnay (0.85, lift 8.2), oak + pear → Chardonnay (0.78), apple + oak → Chardonnay (0.77), pomegranate → Pinot Noir (0.67, 5.5), apple + vanilla → Chardonnay (0.64), butter → Chardonnay (0.60).
+- **Not all consequents are grapes:** five are style or blend labels (Red Blend, Bordeaux- and Rhône-style blends, Rosé, Sparkling Blend), so these are "style or grape" rules.
+- **Development replication:** 71 of 82 rules mined on folds −1/0/1 keep lift ≥ 1.5 on folds 3/4, and 52 keep lift ≥ 2.
+
+**DM5.**
+- **(a)** Recall **1.000** on 1,694 synthetic positives (537 in the 0.5–0.6 band). It passes, but mostly confirms the implementation.
+- **(b)** Engineering check, and **(c)** exploratory 35 of 43: both unchanged from §3.3.
+- **"5 similar wines"** (BSC4): built on the same LSH index in Phase 6.
+
+**DM6: critic calibration (§1.3 model).**
+
+| Specification | Rows · cells | Critic SD (noise-corrected) | Lowest | Highest |
+|---|---|---|---|---|
+| A. Variety × country | 58,715 · 320 | 1.49 (1.46) | Kostrzewa −3.17 | Kettmann +1.90 |
+| B. Variety × province + log price | 45,572 · 472 | 0.93 (0.85) | Schachner −1.44 | DeSimone +1.17 |
+
+- **The answer depends on the specification:**
+  - the two rankings correlate at 0.56;
+  - the largest movers are Peartree (2.73 points), Dykes (2.21), Kostrzewa (1.89), Adams (1.86) and Boone (1.39);
+  - **Iijima, Peartree and Dykes have 95% CIs excluding zero with opposite signs in A and B**, so within-specification CIs understate the real uncertainty.
+- **Where the sensitivity comes from** (same priced rows):
+
+| Variant | Critic SD | Correlation with A |
+|---|---|---|
+| A | 1.50 | 1.00 |
+| A + log price | 1.25 | 0.94 |
+| Variety × province cells | 1.31 | 0.83 |
+| Both (B) | 0.93 | 0.56 |
+
+  Both additions matter, together more than either alone. It isn't a sample artefact.
+- **Robust conclusion:** six critics have 95% CIs excluding zero with the same sign in both. Schachner, Kostrzewa, Czerwinski and Buzzeo score lower than peers on the same wines; Gordon and Kettmann higher.
+- **For BO5** ("how much does a score depend on who tasted it?"): **0.9–1.5 points** of between-critic SD (0.85–1.46 noise-corrected), against a within-cell residual SD of 2.2–2.8.
+- **Identification:** all 15 development critics are in one connected component; DeSimone is linked through only 5 partners. Pickard (6 identifying reviews) is not usefully identified.
+- **H4 keeps its own pre-registered statistic** (below), which is a different quantity from DM6. H4's per-critic values are relative to each fold's training baseline, which mixes in anonymous and other writers' levels, so they aren't critic levels: Czerwinski is +0.45 there but −1.47 / −1.06 in DM6. "Robust" above means robust across the two DM6 specifications.
+
+**H1–H6, development half of BSC5** (each held-out fold scored with its own training data; one-sided 90% winery LB):
+
+| Hypothesis | Estimate | 90% LB | Bar | Holds |
+|---|---|---|---|---|
+| H1 longer notes, higher scores (Spearman ρ) | 0.485 | 0.479 | 0 | ✅ |
+| H2 within variety × country, pricier → higher (partial r) | 0.590 | 0.584 | 0 | ✅ |
+| H3 named designation (points) | +0.71 | +0.67 | 0 | ✅ |
+| H4 SD of critic effects (pre-registered statistic) | 1.24 | 1.20 | 0.5 | ✅ |
+| H5 ≤ $25: whites more often value than reds | +0.9 pp | +0.1 pp | 0 | ✅ (composition) |
+| H6 ≤ $25: strong winery record → more value wines | +27.6 pp | +22.9 pp | 0 | ✅ (0.73% of wines) |
+
+- **H5 holds as pre-registered, but:**
+  - it's a composition effect: by fold it's −7.8 / −3.8 / +6.9 / +2.9 pp, and the review-weighted within-critic difference is **−1.1 pp**;
+  - it isn't Monte Carlo noise: across 20 bootstrap seeds the LB stays at +0.02 to +0.17 pp and H5 replicates in all 20 (notebook 4.4h);
+  - it isn't a buyer insight.
+- **H6** applies to the 283 of 38,602 pool wines (0.73%) with a strong record (11 / 87 / 34 / 151 by fold).
+
+**Assessment summary** (development folds vs the Phase 1 targets):
+
+| Criterion | Target | Selected model (folds 0 / 1 / 3 / 4) | Every fold? |
+|---|---|---|---|
+| DM1 MAE reduction (LB) | ≥ 10% (> 5%) | 34.2 / 42.8 / 23.0 / 35.7% (33.1 / 42.2 / 21.9 / 34.9%) | ✅ |
+| BSC2 within ±2 (gain, LB) | ≥ 0.60 (≥ +5 pp, > 0) | 0.67 / 0.74 / 0.69 / 0.65 (+12.3 / +27.9 / +12.7 / +10.8 pp; LB ≥ +9.6) | ✅ |
+| DM1b masked MAE increase | ≤ 0.15 | 0.07 / 0.04 / 0.01 / 0.04 | ✅ |
+| BSC1 P@100 / lift / LB | ≥ 0.55 / ≥ 1.4× / ≥ 1.2 | 0.63–0.68 / 1.55–1.96× / 1.47–1.77 | ✅ |
+| BSC3 stability | 6–15 profiles ≥ 1%, Jaccard ≥ 0.5 | 8 profiles ≥ 7.6%; 10 of 10 splits pass (min 0.667) | ✅ across producers; writer independence not shown (naming: Phase 5) |
+| DM4 rules | ≥ 10 | 88 (84 pruned; 53 with confidence ≥ 0.2) | ✅ (lockbox: Phase 5) |
+| DM5(a) recall | ≥ 0.90 | 1.000 | ✅ |
+| BSC5, development half | ≥ 4 of 6 incl. H5 or H6 | 6 of 6 (H5 a composition effect) | ✅ (lockbox: Phase 5) |
+
+**What Phase 5 runs** (frozen in `config`; the Phase 4 commit is tagged before Phase 5):
+- **Models:**
+  - DM1 = calibrated ridge (all OOF);
+  - DM2 = ridge + log price, with the P(90+) map and the ±80% band;
+  - DM3 = lexicon NMF, k = 8 (primary, which decides BSC3), and revised-vocabulary NMF, k = 8 (secondary, reported only).
+- **Procedure:** each is refit on all 100,530 development rows with the same procedure (inner folds = the four named folds; anonymous notes by top guess). The lockbox is scored **once**, with R-3 against all development titles.
+- **Reported sensitivities** (none of these can change a selection):
+  - without the 1,234 frozen IDs;
+  - the calibrated ridge without note length (exploratory);
+  - per-critic MAE reduction and bias, ridge vs calibrated;
+  - shortlist writer mix;
+  - Italy vs non-Italy, and with vs without O'Keefe (the §1.2 R11 contingency).
+- **Also in Phase 5:** DM4 lockbox lifts; BSC3 blind naming by two reviewer agents; H1–H6 on the lockbox.
+- **Risks to read the lockbox result against:**
+  - most lockbox Italy rows rest on anonymous training notes;
+  - one critic (O'Keefe) writes about half the lockbox pool;
+  - a single writer's reduction can sit below 10% even when the fold passes: DeSimone (−1.0%); Gregutt (15.5%) and Kostrzewa (16.8%) are the next lowest;
+  - **if ridge over-predicts a lockbox writer, the pooled calibration makes that writer worse** (as for Buzzeo and Kostrzewa). With O'Keefe at half the lockbox pool, her direction decides much of the result. Phase 5 reports ridge vs calibrated per lockbox critic;
+- **Phase 6:**
+  - writer-level calibration in the pilot (the pooled level correction is part of the model; a new house's writers may need their own);
+  - the "5 similar wines" retrieval;
+  - the saved pipeline.
 
 ## 5. Evaluation
 ### 5.1 Assessment against business success criteria · approved models

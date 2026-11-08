@@ -115,3 +115,20 @@ def is_true_duplicate(row_a: pd.Series, row_b: pd.Series, max_content_diff: int 
     relisting = same_producer and ga == gb and close_vintage
     recycled = content_word_difference(row_a["description"], row_b["description"]) <= max_content_diff
     return bool(relisting or recycled)
+
+
+def synthetic_recall(texts: pd.Series, syn: pd.DataFrame, tau: float = config.DM5_TAU) -> dict:
+    """DM5(a): add the synthetic copies to the corpus, run the detector once, and count how many positives
+    (copies with exact J >= tau) are flagged as a pair with their source. Also reports recall in the 0.5-0.6 band
+    (Phase 3 critic round 2, N5: (a) mostly checks the implementation, so the hardest band is shown separately)."""
+    pos = syn[syn["jaccard"] >= tau].reset_index(drop=True)
+    base = texts.reset_index(drop=True)
+    src_pos = base.index[pd.Index(texts.index).get_indexer(pos["source"])]
+    copies = pd.Series(pos["copy"].to_numpy(), index=range(len(base), len(base) + len(pos)))
+    pairs = detect_near_duplicates(pd.concat([base, copies]), tau=tau)
+    found = set(map(tuple, np.sort(pairs[["i", "j"]].to_numpy(), axis=1)))
+    hit = np.array([tuple(sorted((s, c))) in found for s, c in zip(src_pos, copies.index)])
+    band = (pos["jaccard"] < 0.6).to_numpy()
+    return {"positives": len(pos), "recall": float(hit.mean()), "band 0.5-0.6 positives": int(band.sum()),
+            "band 0.5-0.6 recall": float(hit[band].mean()) if band.any() else float("nan"),
+            "passes": bool(hit.mean() >= config.DM5_MIN_RECALL)}
