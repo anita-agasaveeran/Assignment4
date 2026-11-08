@@ -233,3 +233,45 @@ def test_read_naming_counts_confidence_three_or_more(tmp_path):
     f.write_text("| Profile | Name | Confidence (1-5) | Reasoning |\n|---|---|---|---|\n| A1 | Crisp white | 3 | x |\n| A2 | cannot name | 4 | y |\n| A3 | Oaky red | 2 | z |\n")
     t = read_naming(f)
     assert t["named"].tolist() == [True, False, False]
+
+
+def test_pilot_pass_rate_separates_good_and_bad_models():
+    from winevalue import phase5
+    rng = np.random.default_rng(0)
+    n = 2000
+    y = rng.integers(84, 95, n).astype(float)
+    base = np.full(n, y.mean())
+    good = y + rng.normal(0, 0.5, n)
+    rows = pd.DataFrame({"points": y, "sel": good, "base": base, "rank": good, "winery_key": [f"w{i % 700}" for i in range(n)],
+                         "critic": "c", "rule: price (pricier first)": rng.random(n)})
+    ok = phase5.pilot_pass_rate(rows, n_sims=20, n_boot=50)
+    assert ok["BO2 pass rate"] == 1.0 and ok["BO1 pass rate"] == 1.0
+    bad = rows.assign(sel=base + 5, rank=-good)
+    no = phase5.pilot_pass_rate(bad, n_sims=20, n_boot=50)
+    assert no["BO2 pass rate"] == 0.0 and no["BO1 pass rate"] == 0.0
+    g = phase5.gain_vs_offset(rows, offsets=np.array([0.0, 3.0]))
+    assert g["within gain (pp)"].iloc[0] > g["within gain (pp)"].iloc[1]
+
+
+def test_stop_rule_fires_only_for_a_shifted_source():
+    from winevalue import phase5
+    rng = np.random.default_rng(1)
+    n = 1000
+    y = rng.integers(84, 95, n).astype(float)
+    rows = pd.DataFrame({"points": y, "sel": y + rng.normal(0, 1.5, n), "base": np.full(n, y.mean()),
+                         "winery_key": [f"w{i % 400}" for i in range(n)]})
+    calm = phase5.stop_rule_rate(rows, n=100, n_sims=30, n_boot=100)
+    shifted = phase5.stop_rule_rate(rows.assign(sel=rows["sel"] + 2.0), n=100, n_sims=30, n_boot=100)
+    assert calm["rule fires"] == 0.0 and shifted["rule fires"] == 1.0
+    assert abs(shifted["source mean residual"] - calm["source mean residual"] - 2.0) < 1e-9
+
+
+def test_within_group_diff_recovers_a_known_difference():
+    from winevalue import phase5
+    rng = np.random.default_rng(2)
+    n = 4000
+    flag = rng.random(n) < 0.3
+    d = pd.DataFrame({"g": np.where(np.arange(n) % 2, "a", "b"), "flag": flag,
+                      "out": (rng.random(n) < np.where(flag, 0.6, 0.2)).astype(float), "winery_key": [f"w{i % 900}" for i in range(n)]})
+    t = phase5.within_group_diff(d, "g", "flag", "out", n_boot=100).set_index("g")
+    assert ((t["difference"] - 0.4).abs() < 0.06).all() and (t["90% LB"] > 0.3).all()

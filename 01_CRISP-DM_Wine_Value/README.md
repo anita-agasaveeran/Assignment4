@@ -45,7 +45,7 @@ The data is CC BY-NC-SA 4.0 (Zack Thoutt / WineEnthusiast). Derived outputs in t
 | 2 · Data Understanding | ✅ | ✅ | 3 rounds (6 → 7.5 → 8.5/10) |
 | 3 · Data Preparation | ✅ | ✅ | 2 rounds (7 → 8/10) |
 | 4 · Modeling | ✅ | ✅ | 3 rounds (6 → 7 → 8/10) |
-| 5 · Evaluation | ☐ | ☐ | 0 |
+| 5 · Evaluation | ✅ | ✅ | 3 rounds (6 → 8 → 9/10) |
 | 6 · Deployment | ☐ | ☐ | 0 |
 | Medium article · Video script | ☐ | | 0 |
 

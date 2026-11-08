@@ -1,0 +1,5 @@
+criterion,target,result,passes
+DM1,"MAE reduction vs variety × country ≥ 10%, LB > 5%",30.3% (LB 29.0%),True
+DM1b,masked MAE increase ≤ 0.15,not run,
+BSC2,"within ±2 ≥ 0.60, gain ≥ +5 pp, gain LB > 0","0.722, +6.1 pp (LB +5.0)",True
+BSC1,"P@100 ≥ 0.55, ≥ 1.4× best simple rule, top-10% lift LB ≥ 1.2","0.758, 1.93× (winery track record, then price), LB 1.74",True

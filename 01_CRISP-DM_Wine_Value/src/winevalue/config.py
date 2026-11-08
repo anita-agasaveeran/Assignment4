@@ -83,6 +83,14 @@ PILOT_MIN_WINES = 400              # <= $25 wines that later get a critic score;
 PILOT_WITHIN_GAIN_PP = 0.05        # within +/-2 over variety x country (as BSC2); 90% bootstrap lower bound > 0
 PILOT_TOP20_LIFT = 1.3             # ranker's top-20% precision for 90+ vs the BEST frozen simple rule (dev vs price 1.44-1.74x)
 PILOT_TOP20_LIFT_LOWER = 1.0       # and its winery-clustered 90% lower bound must exceed 1.0
+# Amendment after unsealing (2026-11-08, Phase 5 revision 3; report §1.1 note and §5.3): each output is judged on its own part
+# of the gate above (shortlist: the top-20% lift part; score band: the within-±2 part). Stop rule for showing the score band,
+# fixed before any pilot data, from the lockbox gain-vs-offset table: per note source (a named writer, else the supplying
+# importer / producer), once it has >= PILOT_STOP_MIN_WINES scored wines, stop if the two-sided 80% winery-bootstrap CI of
+# the mean residual (prediction - actual) lies wholly outside +/- PILOT_STOP_RESIDUAL. Also applied to the whole pilot.
+PILOT_STOP_RESIDUAL = 1.0
+PILOT_STOP_MIN_WINES = 50
+PILOT_STOP_CI = 0.80
 
 # --- Phase 1: pre-registered buyer-insight hypotheses (BSC5) ---
 # Each is tested in development data AND the lockbox. One-sided 90% winery-clustered bootstrap.
@@ -254,7 +262,7 @@ SCORE_BAND_COVERAGE = 0.80
 # while this is False. It is set to True once, after the evaluation code has been rehearsed on a development fold and the
 # project owner has given the go-ahead; the time is recorded in reports/phase5_run_log.md.
 PHASE4_COMMIT = "8632fba"
-LOCKBOX_UNSEALED = False
+LOCKBOX_UNSEALED = True   # unsealed 2026-11-08 00:08 PST on the project owner's go-ahead, after commit a140a70 (tag wine-phase5-pre-unseal)
 # BSC3 blind naming (section 1.1): a profile counts as named when the reviewer gives a name with confidence >= 3 of 5;
 # each reviewer must name >= 80% of the primary profiles.
 BSC3_MIN_CONFIDENCE = 3

@@ -5,7 +5,22 @@
 > Every number in this report comes from a cell in `notebooks/CRISP_DM_Wine_Value.ipynb`, which is saved with its outputs. Data: [Wine Reviews](https://www.kaggle.com/datasets/zynicide/wine-reviews) (Zack Thoutt; scraped from WineEnthusiast, June 2017; CC BY-NC-SA 4.0). This report is shared under the same licence.
 
 ## Executive summary
-_TODO (after Phase 5): the problem, the approach, headline results against the success criteria, and the recommendation (≤ 200 words)._
+**Problem.** A retailer samples about 100 of roughly 1,000 unscored wines at $25 or less in each buying round. The question: can tasting notes find the ones critics will rate 90+?
+
+**Approach.** CRISP-DM on 118,378 WineEnthusiast reviews. Four critics were sealed away as a lockbox, and every target and hypothesis was registered before modeling. The models were chosen on critic-held-out folds, frozen in a commit, and scored on the lockbox once; two logged re-executions of the identical frozen code reproduced every first-run table byte for byte.
+
+**Results on the four unseen critics:**
+- **Shortlist:** 76% of a 100-wine shortlist are value wines, against 39% for the best simple rule (1.95×, LB 1.76). It held without the notes probably written by lockbox critics. Within one writer's wines it is weaker (top-10% lift 1.29× for Krebiehl, LB 1.19).
+- **Score estimate:** error is 31.5% below the variety × country baseline, and 74% of estimates fall within ±2 points (+7.5 pp over the baseline). Of the five candidates, the frozen one ranks 4th on the lockbox.
+- **Profiles:** the 8 flavour profiles were named by both blind reviewers, but with little margin (one reviewer gave 6 of 8 the lowest passing confidence); that they hold for a new writer is not shown.
+- **Hypotheses:** all six replicate as written. H6 (a strong winery record goes with more value wines) is positive within every critic: clearly for Krebiehl and Sullivan (LB +15 and +18 pp), marginally for O'Keefe (+5.8 pp, LB −2.0), and Jenssen has only 4 such wines. H5 (whites) is a writer-mix effect, not a buyer insight.
+
+**Caveats.**
+- **The score band depends on the writer's level.** The pooled level correction over-predicted the largest lockbox critic, whose Italian wines gain only +1.4 pp, and one writer is predicted worse than the baseline.
+- **The score band's gain doesn't survive masking.** With verdict words removed, the stand-in for retailer notes, the ±2 gain falls to +2.7 pp, below the +5 pp target.
+- **P(90+) over-predicts** the value rate by 10 pp.
+
+**Recommendation.** Go to a pilot on 400 retailer notes (about $10,000 at $25 a sample) with the frozen models, judging the shortlist and the score band each on its own part of the pilot gate. This is a post-unsealing amendment to the pre-registered gate (§1.1); the original joint gate is still reported. On masked notes, the stand-in for retailer notes, simulated pilots pass the shortlist's part 67–99.5% of the time, depending on the writer mix (99.5% in the lockbox's mixed pool, 67–94% in development pools, 54% in a pool of Krebiehl's notes alone). The band's part passes 24% of the time in the lockbox's mixed pool, because half that pool is one writer whose level the band misjudges. So the shortlist is the product. The band is shown internally only if it clears its own bar, and is withdrawn for any note source whose average error is clearly outside ±1 point.
 
 ---
 
@@ -99,6 +114,8 @@ Critics specialise by region, so the split also holds out regions. The coverage 
 - the ranker's top-20% precision for 90+ wines ≥ 1.3× the **best of the frozen simple-rule set**, with LB > 1.0. In development, top-20% lift vs price is 1.44–1.74×.
 
 **Power:** 400 wines give about 80% power at fold-3-like effects. With 100, a model that meets every development target would pass only 39–67% of the time. (`config.PILOT_*`)
+
+> **Amendment, 2026-11-08 (after the lockbox was unsealed; Phase 5 §5.3, option F).** The two bullets above are now applied **per output**, not jointly. The shortlist may be deployed if it passes the second bullet; the score band may be shown only if it also passes the first. The joint result of both bullets is still reported. Neither bar was changed. The reason that doesn't depend on the lockbox: BO1 and BO2 are separate objectives, and a level error shared by a source's wines moves every one of that source's scores in the band but leaves their order on the shortlist unchanged. That holds within a source; across sources, level differences still cost the shortlist about 0.08 of P@100 on the lockbox (§5.1 point 6). The lockbox also showed the band's part is the one likely to fail (§5.3). A stop rule for the band was added at the same time (`config.PILOT_STOP_*`). This amendment was made after the lockbox results were known and before any pilot data exists. It is frozen in git tag `wine-phase5-rev4`.
 
 ### 1.2 Assess situation
 
@@ -868,16 +885,313 @@ The Phase 1 model is scored on *unseen* critics, so the relevant ceiling lies be
   - most lockbox Italy rows rest on anonymous training notes;
   - one critic (O'Keefe) writes about half the lockbox pool;
   - a single writer's reduction can sit below 10% even when the fold passes: DeSimone (−1.0%); Gregutt (15.5%) and Kostrzewa (16.8%) are the next lowest;
-  - **if ridge over-predicts a lockbox writer, the pooled calibration makes that writer worse** (as for Buzzeo and Kostrzewa). With O'Keefe at half the lockbox pool, her direction decides much of the result. Phase 5 reports ridge vs calibrated per lockbox critic;
+  - **if ridge over-predicts a lockbox writer, the pooled calibration makes that writer worse** (as for Buzzeo and Kostrzewa). With O'Keefe at half the lockbox pool, that writer's direction decides much of the result. Phase 5 reports ridge vs calibrated per lockbox critic;
 - **Phase 6:**
-  - writer-level calibration in the pilot (the pooled level correction is part of the model; a new house's writers may need their own);
+  - writer-level calibration in the pilot (the pooled level correction is part of the model; a new note source's writers may need their own);
   - the "5 similar wines" retrieval;
   - the saved pipeline.
 
 ## 5. Evaluation
+> **Revision 3** (2026-11-08), after critic rounds 1 (6/10, 7 MAJOR) and 2 (8/10, 2 MAJOR; `critiques/phase5_evaluation_round*.md`). Revision 3 adds the masked shortlist refit to the pilot simulation, defines and simulates the band's stop rule, and adds per-critic LBs for H6 (re-execution 2). **Revision 2**, after critic round 1: Everything below comes from notebook §5 (saved with outputs) and `reports/tables/phase5_*.csv`. The order of events, including every decision made after unsealing, is in `reports/phase5_run_log.md`. **Revision 2 changes no model, rule, threshold or selection.** It reports every result the lockbox run computed, adds labelled post-hoc diagnostics (notebook 5.1d–5.1h), withdraws two post-unsealing choices of revision 1 (the 55-rule DM4 filter and the "one house's pool" condition), and rebuilds the decision on the full evidence.
+
+**How the lockbox was scored:**
+- The Phase 5 code was frozen in commit `a140a70` (tag `wine-phase5-pre-unseal`), with the lockbox still sealed: `phase5.lockbox_split` raises an error while `config.LOCKBOX_UNSEALED` is False.
+- **Dress rehearsal first.** The same `phase5.evaluate` code ran on development fold 3 and reproduced Phase 4's fold-3 numbers exactly; a notebook assertion checks the match. Cell 5.1a also checks that the regenerated `phase4_fold_predictions` content has the SHA-1 of the tagged Phase 4 file.
+- **Unsealed** on 2026-11-08 at 00:08 PST, on the project owner's go-ahead. **One scoring run** (00:08–01:26).
+- **Two logged re-executions** of the identical frozen code, to save row-level lockbox predictions and the outputs of the new post-hoc cells: re-execution 1 (01:43–03:01, revision 2) and re-execution 2 (03:20–04:38, revision 3). Each time, cell 5.1c asserted that the first run's tables were rewritten byte for byte (6 tables in re-execution 1, all 12 it saves in re-execution 2), and all 13 first-run tables matched their recorded SHA-1s (run log).
+- **Training:** every selected model is refit on all **100,530** development rows, with the Phase 4 procedure.
+- **Test:** the lockbox, 17,796 of 17,848 rows after R-3 (52 rows whose title appears in development were dropped). Its ≤ $25 pool has 7,288 wines.
+
 ### 5.1 Assessment against business success criteria · approved models
+**Pass / fail** (pre-registered targets; LB = one-sided 90% winery-clustered lower bound). The development column gives, per metric, the fold with the smallest margin to the target:
+
+| Criterion | Target | Lockbox result | Weakest development fold (Phase 4) | Pass |
+|---|---|---|---|---|
+| DM1 MAE reduction vs variety × country | ≥ 10%, LB > 5% | **31.5%** (LB 30.2%); MAE 1.40 vs 2.05 | 23.0% (LB 21.9%), fold 3 | ✅ |
+| DM1b masked MAE increase | ≤ 0.15 | **+0.068** (frozen list); round-1 list +0.063; strict price mask +0.070 | +0.07, fold 0 | ✅ (but see point 5: the ±2 gain does not survive masking) |
+| BSC2 within ±2 on ≤ $25 wines | ≥ 0.60, gain ≥ +5 pp, gain LB > 0 | **0.736**, +7.5 pp (LB +6.4) | 0.65, +10.8 pp (LB +9.6), fold 4 | ✅ |
+| BSC1 shortlist | P@100 ≥ 0.55, ≥ 1.4× best simple rule, top-10% lift LB ≥ 1.2 | **0.761**, 1.95× winery track record (0.39), LB 1.76 | P@100 0.63 (fold 1); 1.55×, LB 1.47 (fold 0) | ✅ |
+| BSC3 navigation | 6–15 profiles each ≥ 1%; each of two blind reviewers names ≥ 80% with confidence ≥ 3 | **8 profiles**, smallest 6.4% of lockbox notes; reviewers **8 of 8** and **8 of 8** | 10 of 10 winery splits stable | ✅ **thin margin** (point 8; writer independence not shown, §4.4) |
+| DM4 rules | ≥ 10 development rules keep lift ≥ 1.5 | **55 of 88** (44 with ≥ 30 lockbox notes) | 71 of 82 (folds 3/4) | ✅ |
+| BSC5 buyer insights | ≥ 4 of H1–H6 in both datasets, including H5 or H6 | **6 of 6**; H6 is the only actionable one that is positive within every critic (LB > 0 in two of four; point 10) | 6 of 6 | ✅ |
+| DM5(a) near-duplicate recall | ≥ 0.90 | n/a: a full-corpus synthetic check, not a lockbox result (Phase 4: 1.000) | – | n/a |
+| BSC4 usability | One screen, < 3 s per query | **Not yet tested.** The P(90+) and band outputs are computed below; the recorded demo is Phase 6 | – | Phase 6 |
+
+**Every pre-registered criterion that can be tested before deployment passes.** BSC4 needs the Phase 6 demo, and the pilot gate (§1.1) needs retailer notes. As §1.1 says, these criteria are **necessary, not sufficient**, and the points below show where the passes are fragile: the score band's gain depends on the writer's level and does not survive masking (points 2–5), while the shortlist holds up under every check (point 6).
+
+**What the lockbox shows beyond pass / fail** (points 1–4 and 6–7 use the pre-registered outputs of cell 5.1c; every row marked *post hoc* comes from cells 5.1d–5.1h, added after unsealing, and selects nothing):
+
+1. **The lockbox was easier than fold 3 on average, but not for its largest writer.** Risk R9 picked fold 3 as the closest proxy, on coverage. On the lockbox the baseline is stronger than on fold 3 (variety × country MAE 2.05 vs 2.26), and the model's margin over it is still larger (31.5% vs 23.0%). But O'Keefe, who writes 54% of the lockbox, gets a 22.7% reduction, no better than fold 3's 23.0%. Fold 3's difficulty came from one writer, Gregutt, whom ridge under-predicted by over 2.5 points; the lockbox's comes from one writer over-predicted (point 2). Coverage predicted neither.
+
+2. **Every score candidate on the lockbox** (reported, not selecting; `phase5_score_models.csv`):
+
+| Model | Inner MAE (Phase 4) | MAE | Bias | MAE reduction (LB) | Within ±2 on ≤ $25 (gain, LB) |
+|---|---|---|---|---|---|
+| Variety × country | – | 2.051 | −0.63 | – | 0.661 |
+| Ridge | 1.917 | 1.327 | +0.14 | 35.3% (34.2%) | 0.780 (+11.9 pp, +10.7) |
+| **Calibrated ridge, all OOF (selected)** | **1.762** | **1.404** | **+0.69** | **31.5% (30.2%)** | **0.736 (+7.5 pp, +6.4)** |
+| Stack, no origin | 1.774 | 1.296 | +0.26 | 36.8% (35.8%) | 0.790 (+12.9 pp, +11.8) |
+| Calibrated ridge, named OOF | 1.785 | 1.467 | +0.87 | 28.4% (27.1%) | 0.701 (**+4.0 pp**, +2.9) |
+| Stack (revision 1 choice) | 1.869 | 1.354 | +0.45 | 34.0% (32.6%) | 0.750 (+8.8 pp, +7.6) |
+| *Pre-registered sensitivity:* calibrated ridge without note length | – | 1.377 | +0.48 | 32.9% | not computed |
+
+   - **The selected model ranks 4th of 5 candidates on the lockbox.** The runner-up on inner MAE (stack, no origin, 0.012 behind) is the best of all; the third (calibrated ridge with named-only OOF, 0.023 behind) **would have failed BSC2** (+4.0 pp < +5 pp). So the BSC2 pass rested partly on a narrow inner-fold tie-break between two calibration variants.
+   - **What calibration does.** It is an affine map fitted on all development out-of-fold scores: **points = 7.957 + 0.917 × ridge score**. That compresses the scale and lifts it: the shift is about +0.9 points at a ridge score of 85, +0.65 at 88 and +0.3 at 92. On the lockbox's critics the shift was +0.47 (Krebiehl), +0.53 (O'Keefe), +0.62 (Sullivan) and +0.83 (Jenssen). Plain ridge already sits close to the lockbox's level on average (bias +0.14), so the lift over-predicts. §4.4 named this risk, and it happened.
+   - **Note length.** Dropping it lowers the bias from +0.69 to +0.48 and raises the reduction from 31.5% to 32.9%. Note length carries some of the writer level, as the Phase 4 diagnostic suggested; the effect is reported, not acted on.
+   - Per lockbox critic (MAE reduction, then bias, for ridge → calibrated):
+     - **O'Keefe** (9,644 rows, 54%): 34.3% → **22.7%**, bias +0.66 → **+1.19**. Ridge already over-predicts this writer, so the lift makes it worse, the same pattern as Buzzeo and Kostrzewa in development;
+     - **Krebiehl** (3,268): 49.5% → **55.0%**, bias −0.45 → +0.02. She's under-predicted, and calibration helps;
+     - **Sullivan** (4,448): 32.0% → 33.4%, bias −0.31 → +0.31;
+     - **Jenssen** (436, 2.4%): −68.6% → **−26.0%**, bias −2.44 → −1.61. The model is **worse than the baseline** for this writer either way (point 4).
+   - **The selection stands.** Switching to plain ridge or the no-origin stack now would choose a model on the test set, and plain ridge failed fold 3 in development (1.4%). What the lockbox shows is that a new writer's level offset can go either way, and nothing available before scoring predicts its sign.
+
+3. **Italy is the weak segment for the score band.** In the lockbox, "Italy" and "O'Keefe" are exactly the same 9,644 rows (O'Keefe reviews only Italy, and nobody else in the lockbox does), so the two can't be separated:
+
+| Subset | Rows | MAE | Bias | MAE reduction (LB) | Within ±2 (gain) | Ranker top-10% precision vs rule (lift, LB) |
+|---|---|---|---|---|---|---|
+| All | 17,796 | 1.404 | +0.69 | 31.5% (30.2%) | 0.736 (+7.5 pp) | 0.763 vs 0.392 (1.95×, 1.76) |
+| Italy = O'Keefe | 9,644 | 1.531 | +1.19 | 22.7% (20.9%) | 0.670 (**+1.4 pp**) | 0.602 vs 0.196 (3.07×, 2.64) |
+| Not Italy = without O'Keefe | 8,152 | 1.255 | +0.09 | 41.2% (39.4%) | 0.803 (+13.7 pp) | 0.925 vs 0.482 (1.92×, 1.68) |
+
+   - **Score band:** for Italian wines it barely beats variety × country (+1.4 pp). The BSC2 target applies to the whole lockbox, but **a buyer working mainly on Italy wouldn't see the +5 pp gain**.
+   - **Ranker:** strongest in Italy (3.07× the best rule). An over-prediction shared by every wine in a one-writer group doesn't change their order.
+   - **Analogue notes:** the sensitivity run without the 1,234 anonymous development notes whose top guess is a lockbox critic gives 30.3% (LB 29.0%), 0.722 within ±2 (+6.1 pp, LB +5.0), and P@100 0.758 (1.93×, LB 1.74). **Every target that was run still passes (DM1b was not run here), so the result doesn't rest on notes probably written by lockbox critics.** It can't rule out other, sub-threshold anonymous Italian notes by O'Keefe; Italian training data is 96% anonymous (§4.1).
+
+4. **Jenssen: the model fails for one writer.** For Jenssen's 436 reviews, the model's estimates sit 1.6–2.4 points below the actual scores, and the MAE is worse than variety × country. In development Jenssen's co-author DeSimone (shared handle @worldwineguys, §2.4) was the only writer below zero (−1.0%). So the two writers the model handles worst are a writing pair. **That is an observation, not an explained mechanism.** It is the strongest evidence here that a single new writer can fall outside what the model learned.
+
+5. ***Post hoc (5.1e):* MAE survives masking; the ±2 gain does not.** Masking is the project's only proxy for retailer notes (A1, R1). DM1b passes because it measures MAE. The business gate measures the ±2 gain, and that falls sharply on the lockbox, unlike in development:
+
+| Selected model, within ±2 gain over variety × country (pp) | Fold 0 | Fold 1 | Fold 3 | Fold 4 | Lockbox (LB) |
+|---|---|---|---|---|---|
+| Unmasked | +12.3 | +27.9 | +12.7 | +10.8 | **+7.5** (+6.4) |
+| Frozen verdict list masked (DM1b) | +12.5 | +27.3 | +12.9 | +8.2 | **+2.7** (+1.6) |
+| Round-1 list masked | +12.8 | +28.0 | +12.1 | +9.6 | +4.5 (+3.3) |
+| Frozen list + strict price mask | +12.6 | +27.2 | +12.9 | +8.3 | +2.7 (+1.6) |
+| Top 200 ridge words masked (stress test) | +9.6 | +23.1 | +11.7 | +8.8 | +2.5 (+1.3) |
+
+   - **Under masking the selected model would fail BSC2's +5 pp target, and the pilot gate's.** The MAE increase stays small for the frozen list (+0.068). The 200-word stress test (reported only, not a target) costs +0.159, above the 0.15 DM1b bar.
+   - **By writer** (frozen list masked): O'Keefe +1.4 → **−5.8 pp**, Sullivan +13.9 → +12.1, Krebiehl +20.1 → +16.8, Jenssen −16.4 → −17.3. The collapse is O'Keefe's.
+   - **Why, in part:** masking raises the over-prediction (bias +0.69 → +0.77), and ±2 accuracy is a threshold metric that falls steeply once the level is off (point 7, gain vs offset). In development the biases were near zero or negative, and masking moved them little. This is consistent in direction; it isn't a full quantified explanation.
+   - **Plain ridge keeps more of its gain under masking** (+9.1 pp) because it starts with almost no bias. That is reported, not acted on (option C).
+
+6. **The shortlist (DM2) holds up in a mixed-writer pool.** A real buying round mixes notes from many importers, producers and staff (§1.1, A1, A7), as the lockbox does, so the **mixed-pool figure, P@100 0.76, is the relevant estimate**. Revision 1's condition "rank within one house's pool" is withdrawn: it contradicts the business setup, and it would shrink pools well below 1,000.
+   - **Candidate pools and k:** P@100 is 0.64 with 500 candidates and 0.85 with 2,000; P@50 0.85 and P@200 0.64 with 1,000. Every simple rule stays at 0.19–0.81. The 0.81 is province track record at k = 50 with 2,000 candidates; the ranker scores 0.92 there.
+   - **Stack variants:** within 0.004 of the selected ranker (0.757 and 0.764), so the "simplest within 0.01" choice is unchanged.
+   - **How much is price:** the same ridge without price (text score only) gets P@100 0.721, against 0.761 with log price, so most of the shortlist's strength comes from the note.
+   - **Per critic:** top-10% lift ranges from 1.29× (Krebiehl, LB 1.19) to 3.07× (O'Keefe, LB 2.64).
+   - **The writer level distorts the mix** of the shortlist:
+
+| Critic | Pool share | Top-10% share | Value rate |
+|---|---|---|---|
+| O'Keefe | 50.4% | 50.5% | 14.2% |
+| Sullivan | 24.0% | **7.5%** | 13.9% |
+| Krebiehl | 21.0% | **42.0%** | 49.1% |
+| Jenssen | 4.6% | **0.0%** | 17.6% |
+
+   Krebiehl's high value rate fills the shortlist; Jenssen's wines never reach it. If each critic's level were known, P@100 would be **0.84** instead of 0.76. That's an oracle, not available in use; it measures what the mixed pool costs.
+
+7. **BSC4 outputs on the lockbox, and how the ±2 gain depends on level:**
+   - **P(90+):** Brier score 0.126 against 0.169 for the base rate. The mean predicted P(90+) is 0.32 against an actual value rate of 0.22, so **it over-predicts by 10 pp**. In development the per-fold error ran from −8 to +6 pp, so the error inherits the writer level here too.
+   - **80% band** (± 2.67 points): covers **87%** of lockbox wines, so it's conservative here.
+   - ***Post hoc (5.1h):* gain vs offset.** Adding a constant offset to every ≤ $25 prediction and recomputing the ±2 gain shows how much of the gain is level (`phase5_gain_vs_offset.csv`; mean residual = prediction − actual):
+
+| Pool | Mean residual as frozen | Gain as frozen | Gain at the best offset (oracle) | Gain falls below +5 pp between |
+|---|---|---|---|---|
+| Lockbox, mixed writers | +0.84 | +7.5 pp | +14.1 pp (residual +0.09) | residual +0.84 (+7.5) and +1.09 (+2.8) |
+| Lockbox, O'Keefe only | +1.37 | +1.4 pp | +20.6 pp (residual −0.13) | residual +1.12 (+7.2) and +1.37 (+1.4) |
+| Development fold 3 | −0.52 | +12.7 pp | +15.6 pp (residual −0.02 to +0.23) | residual −1.02 (+7.1) and −1.27 (+3.1); on the other side +1.23 (+7.6) and +1.48 (+3.5) |
+
+     The gain falls below +5 pp once the mean residual leaves a band whose edges, in the mixed lockbox pool, interpolate to **+0.97** and **−1.05**. So the pilot's stop threshold is set at **±1.0 point**, rounded from those edges (§5.3 defines the rule). A correct level would roughly double the lockbox gain (+7.5 → +14.1 pp).
+
+8. **DM3 / BSC3:**
+   - **Profile shares on lockbox notes:** 6.4–23.4%. Only 0.8% of lockbox notes have no lexicon term, against 6.0% in development.
+   - **Naming passes by a thin margin.** Both blind reviewers named all 8 primary profiles, but reviewer 1 gave the minimum passing confidence (3) to 6 of 8 (A1, A4–A8) and reviewer 2 to 2 of 8 (A5, A6). One profile at confidence 2 from reviewer 1 would have dropped the pass to 7 of 8, still ≥ 80%; two would fail it.
+   - **Agreement between the reviewers:** they agree on colour and broad style for 7 of 8 profiles. They disagree on **A6**: reviewer 1 reads oak with creamy and tropical terms as a mixed red-and-white oak style, reviewer 2 as an "oak-driven ripe red". The secondary set (reported only) got 6 of 8 from each.
+   - **Writer independence:** still not shown (§4.4). The reviewers saw development term lists, not a writer-disjoint fit.
+
+9. **DM4: the frozen rules on the lockbox.**
+   - **Overall:** 55 of 88 rules keep lift ≥ 1.5; 44 of those have ≥ 30 lockbox notes, and 17 of the 88 rules have fewer than 18 (support < 0.1%). The median lift falls from 3.11 to 2.03. No lockbox lift has an uncertainty bound.
+   - ***Post hoc (5.1f):* by consequent grape** (rules · kept · development share → lockbox share of rows):
+
+| Consequent | Rules | Kept (lift ≥ 1.5) | Median lift, development → lockbox | Grape share, development → lockbox |
+|---|---|---|---|---|
+| Chardonnay | 24 | 18 | 3.49 → 2.89 | 10.3% → 2.8% |
+| Pinot Noir | 15 | 8 | 2.98 → 1.54 | 12.1% → 1.9% |
+| Cabernet Sauvignon | 14 | 4 | 3.09 → 1.14 | 8.0% → 4.3% |
+| Riesling | 9 | 8 | 4.53 → 2.66 | 3.8% → 5.5% |
+| Sauvignon Blanc | 5 | 5 | 3.46 → 2.61 | 4.5% → 2.1% |
+| Syrah | 3 | 0 | 2.61 → 1.38 | 4.0% → 3.5% |
+| 11 other consequents | 18 | 12 | – | – |
+
+   - **Why some grapes' rules fail is not established.** Revision 1 said the rules fail "in grapes that are rare in an Italy-heavy lockbox"; that claim is withdrawn. Chardonnay shrinks most and keeps 18 of 24; Syrah barely changes and keeps 0 of 3. Across the 17 consequents, the change in grape share and the share of rules kept are barely related (Spearman 0.17).
+   - **What is approved** (below) is the frozen rule set, not the 55 that held up here.
+
+10. **H1–H6 on the lockbox:** all six replicate.
+
+| Hypothesis | Rows | Estimate | 90% LB | Development estimate |
+|---|---|---|---|---|
+| H1 longer notes, higher scores (ρ) | 17,796 | 0.560 | 0.547 | 0.485 |
+| H2 pricier → higher, within variety × country (partial r) | 16,699 | 0.508 | 0.493 | 0.590 |
+| H3 named designation (points) | 17,796 | +0.62 | +0.54 | +0.71 |
+| H4 SD of critic effects | 17,796 | 0.84 | 0.76 (bar 0.5); **4 critics only**, see below | 1.24 |
+| H5 ≤ $25 whites more often value than reds | 6,334 | +9.6 pp | +7.8 pp | +0.9 pp |
+| H6 ≤ $25 strong winery record → more value | 7,288 | +20.5 pp | +15.2 pp | +27.6 pp |
+
+   - **H4:** the SD is taken over only four critic effects, and the LB resamples wineries, not critics, so it can't capture which four writers happened to be sealed away. This was a pre-registered limitation (§1.1); the row passes as written but is weak evidence.
+   - ***Post hoc (5.1d):* H5 is a composition effect again.** On the R-3-filtered lockbox (6,334 rows; revision 1's version skipped R-3 and used 6,337), Krebiehl writes 32.5% of the ≤ $25 whites but only 7.5% of the reds, and Krebiehl's value rate is 51% for both colours. Within each critic, the review-weighted white − red difference is **+0.4 pp**: Krebiehl 0.0, O'Keefe +4.1, Jenssen +6.2, Sullivan −7.6. **H5 passes as written, but it isn't a buyer insight** ("whites are better value") in either dataset.
+   - ***Post hoc (5.1g):* H6 is positive within every critic, but clearly so in only two.** On the lockbox, 420 of 7,288 pool wines (5.8%) have a strong winery record, against 0.73% in development. Their value rate is 41% against 20% for the rest. Within critics (difference in value rate, one-sided 90% winery-bootstrap LB, `phase5_h6_within_critic.csv`):
+
+| Critic | Strong-record wines | Value rate, strong vs others | Difference | 90% LB |
+|---|---|---|---|---|
+| Anne Krebiehl MW | 102 | 72.5% vs 47.5% | +25.1 pp | +15.5 pp |
+| Sean P. Sullivan | 213 | 35.2% vs 10.9% | +24.3 pp | +17.8 pp |
+| Kerin O'Keefe | 101 | 19.8% vs 14.0% | +5.8 pp | −2.0 pp |
+| Jeff Jenssen | 4 | 3 of 4 vs 16.9% | +58.1 pp | not meaningful (n = 4) |
+
+   **H6 is positive within every critic**: clearly so for Krebiehl and Sullivan, marginal for O'Keefe (the LB crosses zero), and untestable for Jenssen. It is still the only actionable hypothesis that is positive within every critic, and it is the one that satisfies BSC5's "H5 or H6" clause in substance. It failed on fold 3 alone in the rehearsal (LB −0.02).
+
+11. **DM6 with the lockbox critics.**
+   - **Specification A** (19 critics, 73,236 rows): critic SD 1.41 (noise-corrected 1.38), close to 1.49 / 1.46 in development. Krebiehl +1.16 (SE 0.16, 5 partner critics), Sullivan +0.66 (0.13, 14), Jenssen +0.61 (0.33, 7), O'Keefe −0.81 (0.23, 4).
+   - ***Post hoc (5.1g):* specification B** (61,315 rows, 721 cells): SD 0.98 (noise-corrected 0.92). Krebiehl +1.68 (SE 0.18, 10 partners), Jenssen +1.19 (0.26, 10), Sullivan −0.18 (0.19, 9), O'Keefe −1.10 (0.22, 10).
+   - **Identification:** in A, O'Keefe is linked through the fewest partner critics (4) but Jenssen has the largest standard error (0.33). **Sullivan and Jenssen swap order between the specifications**, so only the signs of Krebiehl (above peers) and O'Keefe (below peers) are robust. The SD across critics is 0.9–1.4 points depending on the specification.
+   - **Caveat:** these are cell-level effects on scores, not ridge residuals, so they don't predict the ridge bias in point 2. O'Keefe scores below peers on the same wines, yet O'Keefe's notes read higher than the scores given.
+
+**Approved models** (for the Phase 6 pilot, not for unattended use):
+
+| Goal | Model (frozen in `a140a70`) | Status |
+|---|---|---|
+| DM1 / BO2 score band | Calibrated ridge (all OOF), 80% band ± 2.67 | **Approved for the pilot only, internal display.** Its ±2 gain depends on the note source's writer level and falls below +5 pp under masking (points 2, 5, 7). Shown only while the pilot's stop rule allows (§5.3) |
+| DM2 / BO1 shortlist | Ridge + log price; P(90+) by logistic map | **Approved.** The mixed-pool lockbox estimate (P@100 0.76, 1.95×, LB 1.76) is the basis; it held without the analogue notes. Within single critics the top-10% lift is 1.29–3.07×, and a simulated pilot of Jenssen's wines alone would fail (§5.3). The writer level skews which writers reach the shortlist (point 6). P(90+) over-predicts by 10 pp on the lockbox |
+| DM3 / BO3 profiles | Lexicon NMF, k = 8 | **Approved for navigation**, passing by a thin naming margin; they don't describe how a new writer groups wines |
+| DM4 / BO3 rules | FP-Growth descriptor → grape or style rules | **Approved as frozen** (the 88 development rules), shown with their development lift and labelled as associations. The lockbox lift of each rule is recorded in `phase5_dm4_rules.csv` as information; it is not used to choose which rules ship. Revision 1's 55-rule filter is withdrawn |
+| DM5 / BO4 | MinHash LSH, τ = 0.5 | **Approved** (catalogue de-duplication; "5 similar wines" built in Phase 6) |
+| DM6 / BO5 | Critic fixed effects, specifications A and B | **Approved as analysis**, reported as a range (0.9–1.4 points of SD with the lockbox critics), not as a single ranking |
+
 ### 5.2 Review of process
+**Lockbox exposure before unsealing** (complete list, attested by the session record and commit order, not cryptographically):
+- **Scores:**
+  - **Phase 1:** one exploratory check before the lockbox existed used all critics (§1.1 disclosure).
+  - **After that:** no lockbox score was read until 00:08 PST on 2026-11-08. Commit `a140a70`, made before then, still has `LOCKBOX_UNSEALED = False`.
+- **Categorical counts** (allowed by the design): pool sizes and critic shares (§1.1), coverage of variety × country (§1.1), the anonymous share by region (§4.2).
+- **Text only** (no scores):
+  - the R8 attribution classifier was trained on named notes, including the lockbox critics' notes;
+  - 859 anonymous notes were dropped and the 1,234-ID sensitivity list was built from it;
+  - text-level deduplication removed 36 lockbox rows.
+- **Fitted steps:** every fitted transform (TF-IDF, one-hot, imputer, scaler, ridge, calibration, P(90+) map, band, NMF, rule mining) is fit on development rows inside `phase5.evaluate`. The Phase 3 steps are row-wise rules or hand-written lists (lexicon, colour map, grape map), frozen before Phase 4.
+
+**Decisions made after unsealing** (each is in the run log with the evidence that drove it):
+
+| Decision | Evidence | Kind |
+|---|---|---|
+| 5.1d: H5 within critic (re-run on the R-3-filtered lockbox in revision 2) | Lockbox `points`, `colour`, `critic` | Descriptive diagnostic |
+| 5.1e–5.1h: every candidate, masked ±2 gains, DM4 by grape, H6 within critic, DM6 spec B, pilot simulation, gain vs offset | Lockbox predictions | Descriptive diagnostics |
+| Re-executions 1 and 2 of the full notebook | Identical frozen code; tables byte-identical | Reproduction |
+| 5.1h, revision 3: shortlist ranker refit on masked notes; stop-rule firing rates; H6 per-critic LBs | New lockbox scoring of a masked refit of the frozen ranker (not a frozen model); lockbox predictions | Descriptive diagnostics |
+| DM4 55-rule display filter (revision 1) | Lockbox rule lifts | **Withdrawn** in revision 2: selection on the test set |
+| "Shortlists ranked within one house's pool" (revision 1) | Shortlist writer mix | **Withdrawn** in revision 2: contradicts A1/A7 |
+| P(90+) displayed as a relative indicator, not a probability | Lockbox over-prediction of 10 pp | Display choice, lockbox-driven |
+| Score band labelled "may be less accurate for Italian wines and for writers unlike those in training" | Points 3–4 | Display choice, lockbox-driven |
+| Pilot stop rule for the band: ±1.0 point (revision 1: ±1.5 with no basis), per note source, ≥ 50 wines, 80% CI wholly outside (revision 3) | Gain vs offset (point 7); unit, n and CI set before the firing rates were computed | Deployment rule, lockbox-driven |
+| Pilot outputs judged separately: the shortlist on the BO1 part of the gate, the score band on the BO2 part (§5.3) | Pilot simulation (§5.3) | Deployment rule, lockbox-driven |
+
+None of these changes a model, a model-selection rule or a Phase 5 threshold. **The last one amends the pre-registered pilot decision rule (§1.1, dated amendment note there)**: the two bars are unchanged, but they are now applied per output instead of jointly. The last three were fixed before any pilot data exists, but they were informed by the lockbox, so the pilot is the first clean test of them.
+
+**Forking paths, counted** (from `reports/phase4_run_log.md`):
+- **DM1:** chosen twice. Revision 1's rule chose the stack after one full outer run and two earlier fold-3 looks. Revision 2 rewrote the rule after those outer results had been seen and chose among five candidates on inner folds. Two further outer-fold diagnostics (note length on fold 3, then on folds 0, 1 and 4) changed nothing.
+- **DM2:** one selection rule, unchanged; two full outer runs (revisions 1 and 2) with the same outcome.
+- **DM3:** re-chosen once in revision 2, after a scan of 120 settings (3 vocabularies × 2 fit sets × 2 methods × 10 values of k) for stability; no value metric was used.
+- **What the lockbox says about it:** **the post-hoc revision did worse on the clean holdout.** Revision 1's stack scores 34.0% and 0.750 within ±2 (+8.8 pp); revision 2's calibrated ridge scores 31.5% and 0.736 (+7.5 pp). Both pass. Under masking the gap widens: the stack keeps +6.7 pp (LB +5.5) and would still pass BSC2, while the frozen choice falls to +2.7 pp. The lockbox stays an unbiased estimate for the frozen choice, which is what it was for.
+
+**Phase-by-phase audit:**
+
+| Phase | What held up | Deviations and weaknesses | Effect on the Phase 5 claims |
+|---|---|---|---|
+| 1 Business understanding | Critic-grouped lockbox; targets, LBs and hypotheses pre-registered; simple-rule set frozen; pilot gate defined | **R9's proxy was wrong in direction** (point 1). **Targets apply to the whole pool only**: with a single critic covering most of one region, an Italy-only gain of +1.4 pp passes as part of the whole. **H5 was written as a pooled contrast**, which composition can satisfy; it should have been within-critic. **H4 uses four critic effects**, too few for its LB. **DM1b measures MAE**, not the ±2 gain the business gate uses | The lockbox passes are valid as pre-registered; the Italy, H4, H5 and masking caveats are reported above |
+| 2 Data understanding | Score analysis on development data only; duplicates and repeat titles found early (R3) | DM5 re-specified after a look at real pairs (logged); (c) is exploratory | None on the lockbox (text only) |
+| 3 Data preparation | Row-wise rules; leak stripping; R-3 and R8 filters; leakage probe on development data | Hand-written stop-word list is judgement, not a rule (§4 log) | Text rules removed 36 lockbox rows; reported |
+| 4 Modeling | Inner-fold selection; the rule written before each run; run log with times; three critic rounds | **Forking paths** (counted above). **The calibration's sign risk was named but had no pre-registered rule.** The BSC2 pass depended on a 0.023 inner-MAE tie-break between calibration variants | The frozen choice ranks 4th of 5 on the lockbox, reported, not acted on |
+| 5 Evaluation | Sealed loader; dress rehearsal with an equality assertion; content-hash check of the Phase 4 predictions; commit and tag before unsealing; one scoring run and two byte-identical re-executions | **Revision 1 reported selectively** (critic round 1): it left out the without-length sensitivity, two candidates and the masked ±2 gain, and filtered the DM4 rules on the lockbox. Revision 2 reports all of them and withdraws the filter. Revision 2 judged the band on masked notes but the shortlist only unmasked, and its stop rule had no unit or minimum n (critic round 2); revision 3 masks both and defines the rule. Every post-unsealing decision is listed above | The decision in §5.3 is rebuilt on the full evidence |
+
+**Limitations that remain** (they apply to every pass above):
+- **Note source (A1, R1).** The test uses critic notes; the real input is importer, producer or staff notes. Masking is only a proxy. It hurts the score band's ±2 gain most (point 5); it leaves the shortlist's simulated pilot pass rate at 0.995 on the lockbox but costs it 0.01–0.14 in development (§5.3). The pilot gate exists for this reason.
+- **One holdout of four writers.** The LBs resample wineries, not writers. With four writers, the lockbox can't bound what one new writer will see: Jenssen's −26% and O'Keefe's +1.4 pp show the range.
+- **AI reviewers.** The critic rounds and the BSC3 naming were done by Claude agents, not wine buyers. They catch analysis errors and test readability, but they don't validate business value.
+- **Data age.** One 2017 snapshot; prices are stale (R5); only 80+ wines are published (R4).
+- **Pilot and BSC4 are untested.**
+
 ### 5.3 Possible actions & decision
+***Post hoc (5.1h):* how likely is the pre-registered pilot gate to pass?** Notebook 5.1h estimates it by simulation: draw 400 ≤ $25 wines from a pool (200 pilots), apply the gate exactly as pre-registered (±2 gain ≥ +5 pp with a winery-bootstrap LB > 0; top-20% precision ≥ 1.3× the best frozen simple rule on that pilot, LB > 1.0), and count passes (`phase5_pilot_simulation.csv`). The **masked** rows stand in for retailer notes: both the score model and the shortlist ranker are refit on masked training notes and scored on masked test notes (frozen verdict list), since both read the note.
+
+| Pool the pilot is drawn from | BO2 part passes | Mean ±2 gain | BO1 part passes | Median top-20% lift | Both pass |
+|---|---|---|---|---|---|
+| Development folds 0 / 1 / 3 / 4 | 0.990–1.000 | +10.9 to +27.9 pp | 0.775–0.950 | 1.42–1.61× | 0.775–0.945 |
+| Development folds 0 / 1 / 3 / 4, masked | 0.860–1.000 | +8.1 to +27.4 pp | 0.670–0.940 | 1.39–1.59× | 0.655–0.935 |
+| Lockbox, mixed writers | 0.805 | +7.4 pp | **0.995** | 1.73× | 0.805 |
+| **Lockbox masked, mixed writers** (retailer-note proxy) | **0.240** | +2.5 pp | **0.995** | 1.70× | 0.240 |
+| Lockbox, O'Keefe only | 0.125 | +1.5 pp | 1.000 | 1.95× | 0.125 |
+| Lockbox masked, O'Keefe only | 0.000 | −5.5 pp | 0.995 | 1.90× | 0.000 |
+| Lockbox, Sullivan only | 1.000 | +13.9 pp | 0.875 | 1.52× | 0.875 |
+| Lockbox masked, Sullivan only | 0.995 | +12.2 pp | 0.900 | 1.54× | 0.895 |
+| Lockbox, Krebiehl only | 1.000 | +19.8 pp | 0.550 | 1.31× | 0.550 |
+| Lockbox masked, Krebiehl only | 1.000 | +16.6 pp | 0.535 | 1.31× | 0.535 |
+| Lockbox, Jenssen only (all 336 wines: **one evaluation**, not a rate) | fails | −16.4 pp | fails | 1.23× | fails |
+| Lockbox masked, Jenssen only (same 336 wines) | fails | −17.3 pp | fails | 1.14× | fails |
+
+- **Like for like, masking barely touches the shortlist and sinks the band.** On masked lockbox notes the shortlist's part still passes 0.995 (lift 1.70× vs 1.73×). In development masking costs it more (0.67–0.94 against 0.775–0.95 unmasked). The band's part falls from 0.805 to 0.240.
+- **The band's part is likely to fail if about half the notes behave like O'Keefe's under masking.** O'Keefe writes 50% of the lockbox pool, and the masked mixed rate (0.240) is mostly that writer's effect: masked pools of Sullivan or Krebiehl alone pass 0.995–1.000. Jenssen's pool fails both parts.
+- **The shortlist is weak inside some single-writer pools:** Krebiehl 0.535–0.550, and Jenssen fails. A pilot from "several writers" (condition 2) matters for it too.
+- **Reconciling with Phase 1's power figure** ("about 80% at fold-3-like effects"): that figure was sized for a model that just meets the development targets (Phase 1 critic round 3, issue N1). The frozen models exceed them on fold 3 (+12.7 pp against the +5 pp bar), so fold 3's simulated both-pass rate is higher (0.945). What the lockbox changes is the size of the effect, not the sample size needed.
+- **Limits:**
+  - the pass rates are conditional on the lockbox's four-writer mix: the simulation resamples wines and wineries, not writers;
+  - the pools are critic notes, masked or not, not retailer notes;
+  - 200 pilots per row, so a rate has a simulation SE of up to about 0.035. The masked mixed BO2 rate was 0.195 in revision 2's run, which skipped the BO1 part and so drew different random pilots; this run gives 0.240.
+- **Cost** (A5, illustrative): 400 pilot wines × ~$25 per sample ≈ **$10,000**, plus analyst time, whichever option below runs the pilot.
+
+***Post hoc (5.1h):* the stop rule for the band, defined and simulated.**
+- **Unit: the note source**, meaning the named writer where known, otherwise the importer or producer that supplied the note.
+- **Rule:** once a source has ≥ 50 scored pilot wines, and at every interim check after that, compute its mean residual (prediction − actual) and an 80% winery-bootstrap CI. **If the CI lies wholly outside ±1.0, stop showing the band for that source's wines.** The same check runs on each country with ≥ 50 scored wines (Italy is the known weak segment, point 3) and on the whole pilot. On the lockbox, Italy's wines are all O'Keefe's, so Italy's firing rate is O'Keefe's row below.
+- **Settings** (`config.PILOT_STOP_*`): the ±1.0 is rounded from the gain-vs-offset edges (+0.97 / −1.05, point 7). The 50-wine minimum and the 80% CI were fixed in `config.py` before the firing rates below were computed; that order is attested by the session record and run log, not by a commit. All three were informed by the lockbox.
+- **Simulation:** draw 50 or 100 wines from one source (200 checks), apply the rule, count how often it fires (`phase5_stop_rule.csv`). Sources are every development-fold writer with ≥ 200 pool wines, plus the lockbox writers, masked and unmasked.
+
+| Sources | Mean residual | Source's ±2 gain | Rule fires at 50 / 100 wines |
+|---|---|---|---|
+| Within ±1: 7 development writers; Sullivan and Krebiehl, masked or not | −0.36 to +0.81 | +12.1 to +38.4 pp | ≤ 0.010 / ≤ 0.020 |
+| Just outside: Boone, Kostrzewa | +1.08, +1.10 | +10.2, +5.9 pp | 0.155–0.190 / 0.190–0.225 |
+| Well outside, band still passes: Gregutt, Buzzeo | −1.43, +1.51 | +7.8, +9.9 pp | 0.745–0.895 / 0.915–0.990 |
+| Well outside, **band fails**: O'Keefe, O'Keefe masked, Jenssen, Jenssen masked, DeSimone | +1.37, +1.60, −1.39, −1.40, −1.45 | +1.4, −5.8, −16.4, −17.3, −2.7 pp | **0.585–0.945 / 0.825–1.000** |
+| Whole pool, 400 wines: lockbox / lockbox masked / development folds | +0.84 / +0.99 / −0.52 to +0.96 | +7.5 / +2.7 / +10.8 to +27.9 pp | 0.000 / 0.080 / 0.000–0.030 |
+
+- **What it does:**
+  - it rarely fires for a source within ±1 (at most 2% of checks);
+  - it catches the sources where the band fails 59–95% of the time at 50 wines and 83–100% at 100;
+  - it errs on the safe side: it also withdraws the band from some sources where it still works (Gregutt, Buzzeo).
+- **Why per source:** run only on the whole pilot, it would have missed the masked lockbox case (fires 8% of the time, mean residual +0.99).
+- **Gap:** a source with fewer than 50 scored wines is covered only by the whole-pilot check.
+
+| Option | For | Against | Verdict |
+|---|---|---|---|
+| A. Stop the project | – | Every pre-registered criterion that can be tested passes; the shortlist is strong under every check | Rejected |
+| B. Go to the pilot with the pre-registered gate unchanged (both parts must pass to deploy anything) | Exactly as pre-registered | On masked lockbox notes the joint gate passes 0.24 of simulated pilots, almost entirely because of the band's part; the shortlist's part passes 0.995 | Rejected as the deployment rule; the joint gate is still computed and reported |
+| C. Switch DM1 to plain ridge or the no-origin stack, which did better on the lockbox | 35.3–36.8% vs 31.5%; ±2 0.78–0.79 vs 0.74; plain ridge keeps +9.1 pp under masking | Selecting on the test set; the lockbox would no longer be an unbiased estimate. Plain ridge failed fold 3 in development (1.4%) | Rejected; reported as a sensitivity only |
+| D. Go back to Phase 4 and add writer-level calibration | Points 2, 4 and 7: a correct level roughly doubles the ±2 gain | No fresh holdout left to test a new model on | Moved into the pilot as a **secondary** analysis (condition 4) |
+| E. Collect a new holdout (post-2017 reviews, new critics) | A second clean test | Out of scope; needs new data | Recommended for monitoring (Phase 6.2) |
+| F. **Pilot both outputs, each judged on its own part of the gate** | **Independent of the lockbox:** BO1 and BO2 are separate objectives (§1.1). A level error shared by one source's wines shifts every one of its band estimates but leaves its shortlist order unchanged (within a source; across sources, level differences still cost the shortlist about 0.08 of P@100 on the lockbox, point 6). Each output must still clear its own pre-registered bar; neither bar changes | **A post-unsealing amendment to the pre-registered gate** (§1.1 dated note; §5.2), informed by the simulation above, so the pilot is its first clean test. Same cost as B | **Chosen** |
+
+**Decision: GO to Phase 6 for a pilot (option F).** No unattended or customer-facing use. The conditions are fixed now, before any pilot data exists:
+1. **Models:** exactly as frozen in `a140a70`. The Phase 6 pipeline must reproduce the lockbox predictions in `phase5_lockbox_predictions.csv.gz`.
+2. **Pilot data:** ≥ 400 ≤ $25 retailer notes for wines that later receive a critic score, from several note sources.
+3. **Gate, per output** (the bars are the pre-registered ones from §1.1):
+   - **Shortlist (BO1):** top-20% precision ≥ 1.3× the best frozen simple rule, LB > 1.0. Pass → the shortlist may be deployed for internal buying.
+   - **Score band (BO2):** ±2 accuracy ≥ +5 pp over variety × country, LB > 0. It is shown only next to a deployed shortlist. Shortlist and band pass → the band may be shown internally. Band fails → it is not shown.
+   - **Band passes, shortlist fails:** nothing is deployed; both results are reported and the project returns to Phase 4.
+   - Both gates are computed on **all** pilot wines. A stop-rule withdrawal never removes wines from either gate, and every firing is reported next to the gate.
+   - The joint pre-registered gate (both parts) is reported either way.
+4. **Writer level, secondary and reported only:** the pilot also reports each note source's mean residual, and the gate metrics after a source-specific intercept fitted on the first scored wines from that source. Phase 6 freezes the exact rule before any pilot data. If it helps, it becomes a candidate for a later model version, tested on new data, not on the same pilot.
+5. **Display:** the band is labelled "estimated" (R10) and "may be less accurate for Italian wines and for writers unlike those in training". P(90+) is shown as a relative indicator, since it over-predicted by 10 pp on the lockbox.
+6. **BSC4:** the Phase 6 demo must show all outputs on one screen in under 3 s per query.
+7. **Stop rules at each interim check** (schedule set in Phase 6.2):
+   - **Band:** stop showing it for a note source once that source has ≥ 50 scored wines and the 80% winery-bootstrap CI of its mean residual lies wholly outside ±1.0. The same check runs per country (≥ 50 scored wines; the band is withdrawn for that country) and on the whole pilot (the band is withdrawn everywhere).
+   - **Shortlist:** if the shortlist's lift LB falls below 1.0, pause the pilot and report.
 
 ## 6. Deployment
 ### 6.1 Deployment plan

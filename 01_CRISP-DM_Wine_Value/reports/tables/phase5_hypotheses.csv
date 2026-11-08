@@ -1,0 +1,7 @@
+hypothesis,statement,rows,estimate,90% LB,bar,replicates
+H1,"(sanity) Longer tasting notes go with higher scores: Spearman rho > 0, LB > 0",17796,0.5599033588334853,0.546868535044551,0.0,True
+H2,"(sanity) Within variety x country, pricier wines score higher: partial corr(log price, score) > 0, LB > 0",16699,0.5077059771005992,0.493261508305488,0.0,True
+H3,"(sanity) A named designation goes with higher scores (same variety x country): difference > 0, LB > 0",17796,0.6156609756455637,0.53840128234562,0.0,True
+H4,"Critics differ: SD of critic effects (score minus training-fitted variety x country expectation) > 0.5, LB > 0.5. Limitation: the lockbox has only 4 critics, which a winery bootstrap doesn't capture",17796,0.8440019947486886,0.7566619763766,0.5,True
+H5,"Among <= $25 wines, whites are more often value wines (90+) than reds: difference > 0, LB > 0. Colour from winevalue.grapes.wine_colour(variety, title, winery, note), frozen in Phase 2 revision 3 and re-frozen with dated amendments in Phase 3 (grape knowledge + title and note style words; text only, before any colour x value table or lockbox use)",6334,0.09649222701449109,0.0784254178292256,0.0,True
+H6,"Among <= $25 wines, a strong winery track record (GroupMeanBaseline(keys=('winery',), shrink=20) on training >= 89) goes with a higher value-wine rate: difference > 0, LB > 0",7288,0.20524308733394347,0.1516305292783303,0.0,True
