@@ -248,3 +248,14 @@ SIMPLICITY_ORDER = ["ridge", "calibrated ridge (all OOF)", "calibrated ridge (na
                     "stack P(90+) + log price", "stack P(90+) + log price + winery record"]
 # BSC4 outputs, fixed before Phase 5 (critic round 1 #15): see evaluate.app_mappings
 SCORE_BAND_COVERAGE = 0.80
+
+# --- Phase 5: the single lockbox evaluation ---
+# Phase 4 was frozen in commit 8632fba (tag wine-phase4) before any Phase 5 code ran. The lockbox loader refuses to run
+# while this is False. It is set to True once, after the evaluation code has been rehearsed on a development fold and the
+# project owner has given the go-ahead; the time is recorded in reports/phase5_run_log.md.
+PHASE4_COMMIT = "8632fba"
+LOCKBOX_UNSEALED = False
+# BSC3 blind naming (section 1.1): a profile counts as named when the reviewer gives a name with confidence >= 3 of 5;
+# each reviewer must name >= 80% of the primary profiles.
+BSC3_MIN_CONFIDENCE = 3
+BSC3_MIN_NAMED = 0.80

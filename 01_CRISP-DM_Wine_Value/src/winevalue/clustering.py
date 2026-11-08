@@ -230,3 +230,31 @@ def profile_summary(df: pd.DataFrame, k: int, method: str = "nmf", vocabulary: s
     if W is not None:
         out["weak_fit"] = pd.Series(W.max(1) / np.maximum(W.sum(1), 1e-12), index=d.index)
     return out
+
+
+def fit_profile_model(df: pd.DataFrame, k: int, method: str = "nmf", vocabulary: str = "lexicon", seed: int = config.SEED):
+    """Fit profiles on ``df`` (development notes) and return (top terms, assign) where ``assign(new_df)`` gives each new
+    note's profile (-1 if it has no vocabulary term), using the transformer and model fitted on ``df`` only."""
+    from sklearn.feature_extraction.text import TfidfTransformer
+    from .descriptors import item_matrix
+    if vocabulary == "lexicon":
+        tf = TfidfTransformer(sublinear_tf=True).fit(item_matrix(df, grapes=[]).to_numpy(dtype=float))
+        items = item_matrix(df.iloc[:1], grapes=[]).columns
+        vocab = np.array([c[2:] for c in items])
+        to_x = lambda d: tf.transform(item_matrix(d, grapes=[]).to_numpy(dtype=float)).tocsr()
+    else:
+        vec = profile_vectorizer(df["note"], revised_stopwords() if vocabulary == "revised" else ())
+        vocab = vec.get_feature_names_out()
+        to_x = lambda d: vec.transform(d["note"])
+    X = to_x(df)
+    keep = np.asarray(X.sum(1)).ravel() > 0
+    if method != "nmf":
+        raise ValueError("assignment of new notes is implemented for NMF only")
+    m = NMF(n_components=k, init="nndsvda", random_state=seed, max_iter=400).fit(X[keep])
+
+    def assign(new: pd.DataFrame) -> pd.Series:
+        Xn = to_x(new)
+        lab = m.transform(Xn).argmax(1)
+        lab[np.asarray(Xn.sum(1)).ravel() == 0] = -1
+        return pd.Series(lab, index=new.index)
+    return top_terms(m.components_, vocab), assign

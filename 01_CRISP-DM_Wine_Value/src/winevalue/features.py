@@ -10,8 +10,9 @@ QUALITY_INPUTS_V2 = ["note", "country", "province_model", "grape", "label_differ
 RANKER_INPUTS_V2 = QUALITY_INPUTS_V2 + ["price"]
 
 
-def build_preprocessor(with_price: bool = False):
-    """ColumnTransformer for the prepared table. Fit it INSIDE each training fold only (pipelines do this)."""
+def build_preprocessor(with_price: bool = False, exclude=()):
+    """ColumnTransformer for the prepared table. Fit it INSIDE each training fold only (pipelines do this).
+    ``exclude``: structured columns left out (Phase 5 sensitivity: ``("n_words",)``)."""
     import numpy as np
     from sklearn.compose import ColumnTransformer
     from sklearn.feature_extraction.text import TfidfVectorizer
@@ -25,6 +26,8 @@ def build_preprocessor(with_price: bool = False):
         ("num", make_pipeline(SimpleImputer(strategy="median"), StandardScaler()), ["vintage", "n_words"]),
         ("flags", "passthrough", ["is_nonvintage", "has_designation", "has_region_1", "label_differs"]),
     ]
+    if exclude:
+        parts = [(n, t, [c for c in cols if c not in exclude]) if isinstance(cols, list) else (n, t, cols) for n, t, cols in parts]
     if with_price:
         parts.append(("log_price", make_pipeline(SimpleImputer(strategy="median"), FunctionTransformer(np.log), StandardScaler()), ["price"]))
     return ColumnTransformer(parts)

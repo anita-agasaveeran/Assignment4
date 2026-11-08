@@ -54,6 +54,12 @@ def score_candidates(train: pd.DataFrame, test: pd.DataFrame, groups: pd.Series,
 def run_fold(prep: pd.DataFrame, fold: int, anon_drop: dict, top_fold: pd.Series, masks: bool = True) -> dict:
     """All Phase 4 candidates on one outer fold. Returns predictions on the test rows and fitting info."""
     train, test = outer_split(prep, fold, anon_drop)
+    return run_split(train, test, top_fold, fold, masks)
+
+
+def run_split(train: pd.DataFrame, test: pd.DataFrame, top_fold: pd.Series, fold: int, masks: bool = True) -> dict:
+    """The Phase 4 procedure on any (training, test) pair: an outer development fold in Phase 4, the lockbox in Phase 5.
+    ``fold`` labels the run and seeds its simulations. Inner folds are the named folds present in ``train``."""
     groups = inner_groups(train, top_fold=top_fold)
     out = {"fold": fold, "train": train, "test": test, "info": {}}
     alpha, tab = tune_ridge(train, groups)

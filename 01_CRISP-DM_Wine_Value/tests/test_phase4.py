@@ -189,3 +189,47 @@ def test_prune_rules_drops_rules_no_better_than_a_parent():
     from winevalue.descriptors import prune_rules
     r = pd.DataFrame({"antecedents": ["oak", "oak + pineapple", "oak + vanilla"], "consequents": ["Chardonnay"] * 3, "lift": [3.0, 5.0, 2.5]})
     assert prune_rules(r)["antecedents"].tolist() == ["oak", "oak + pineapple"]
+
+
+def test_lockbox_loader_is_sealed(monkeypatch):
+    from winevalue import phase5
+    monkeypatch.setattr(config, "LOCKBOX_UNSEALED", False)
+    with pytest.raises(PermissionError):
+        phase5.lockbox_split(_prep())
+
+
+def test_lockbox_split_uses_all_development_rows_and_r3():
+    from winevalue import phase5
+    import winevalue.config as C
+    old = C.LOCKBOX_UNSEALED
+    C.LOCKBOX_UNSEALED = True
+    try:
+        df = _prep(); df.loc[105, "title"] = df.loc[100, "title"]        # a lockbox wine also reviewed in development
+        train, test = phase5.lockbox_split(df)
+        assert not train["is_lockbox"].any() and test["is_lockbox"].all()
+        assert len(train) == (~df["is_lockbox"]).sum() and 105 not in test.index and 104 in test.index
+    finally:
+        C.LOCKBOX_UNSEALED = old
+
+
+def test_subset_run_keeps_training_and_aligns_rows():
+    from winevalue.phase5 import subset_run
+    te = pd.DataFrame({"critic": ["a", "b", "a"]}, index=[1, 2, 3])
+    run = {"train": "T", "test": te, "score_preds": pd.DataFrame({"m": [1, 2, 3]}, index=[1, 2, 3]),
+           "rank_scores": pd.DataFrame({"r": [3, 2, 1]}, index=[1, 2, 3])}
+    s = subset_run(run, te["critic"].eq("a"))
+    assert s["train"] == "T" and list(s["test"].index) == [1, 3] and s["score_preds"]["m"].tolist() == [1, 3]
+
+
+def test_build_preprocessor_can_exclude_length():
+    from winevalue.features import build_preprocessor
+    pre = build_preprocessor(False, exclude=("n_words",))
+    assert all("n_words" not in (cols if isinstance(cols, list) else [cols]) for _, _, cols in pre.transformers)
+
+
+def test_read_naming_counts_confidence_three_or_more(tmp_path):
+    from winevalue.phase5 import read_naming
+    f = tmp_path / "r.md"
+    f.write_text("| Profile | Name | Confidence (1-5) | Reasoning |\n|---|---|---|---|\n| A1 | Crisp white | 3 | x |\n| A2 | cannot name | 4 | y |\n| A3 | Oaky red | 2 | z |\n")
+    t = read_naming(f)
+    assert t["named"].tolist() == [True, False, False]

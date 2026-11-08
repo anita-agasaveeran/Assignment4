@@ -63,11 +63,11 @@ def _cols(df, inputs, text_col):
     return out.rename(columns={text_col: "note"}) if text_col != "note" else out
 
 
-def ridge_fit_predict(alpha: float, with_price: bool = False, text_col: str = "note"):
+def ridge_fit_predict(alpha: float, with_price: bool = False, text_col: str = "note", exclude=()):
     inputs = RANKER_INPUTS_V2 if with_price else QUALITY_INPUTS_V2
 
     def fp(fit_rows: pd.DataFrame, pred_rows: pd.DataFrame) -> np.ndarray:
-        pre = build_preprocessor(with_price)
+        pre = build_preprocessor(with_price, exclude)
         X = pre.fit_transform(_cols(fit_rows, inputs, text_col))
         m = Ridge(alpha=alpha).fit(X, fit_rows["points"])
         return m.predict(pre.transform(_cols(pred_rows, inputs, text_col)))
