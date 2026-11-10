@@ -1,0 +1,38 @@
+pool,unit,share of pilots
+development fold 0,country: Portugal,0.96
+development fold 0,source: Roger Voss,0.01
+development fold 1,country: Argentina,0.11
+development fold 1,country: US,0.04
+development fold 1,source: Jim Gordon,0.02
+development fold 3,source: Paul Gregutt,0.99
+development fold 3,country: US,0.39
+development fold 4,source: Lauren Buzzeo,0.92
+development fold 4,country: South Africa,0.51
+development fold 4,source: Virginie Boone,0.23
+development fold 4,country: US,0.2
+development fold 4,source: other sources (pooled),0.13
+development fold 4,source: Susan Kostrzewa,0.11
+development fold 4,pilot: all wines,0.1
+development fold 4,source: Matt Kettmann,0.02
+"lockbox, mixed writers",source: Kerin O’Keefe,1.0
+"lockbox, mixed writers",country: Italy,1.0
+"lockbox, mixed writers",country: US,0.02
+"development fold 0, masked",country: Portugal,0.8
+"development fold 1, masked",country: Argentina,0.14
+"development fold 1, masked",source: Jim Gordon,0.02
+"development fold 1, masked",country: US,0.02
+"development fold 3, masked",source: Paul Gregutt,0.84
+"development fold 3, masked",country: US,0.07
+"development fold 4, masked",source: Lauren Buzzeo,0.96
+"development fold 4, masked",country: US,0.62
+"development fold 4, masked",source: Virginie Boone,0.56
+"development fold 4, masked",pilot: all wines,0.53
+"development fold 4, masked",country: South Africa,0.51
+"development fold 4, masked",source: other sources (pooled),0.34
+"development fold 4, masked",source: Susan Kostrzewa,0.1
+"development fold 4, masked",source: Matt Kettmann,0.07
+"lockbox, mixed writers, masked",source: Kerin O’Keefe,1.0
+"lockbox, mixed writers, masked",country: Italy,1.0
+"lockbox, mixed writers, masked",pilot: all wines,0.12
+"lockbox, mixed writers, masked",source: other sources (pooled),0.03
+"lockbox, mixed writers, masked",country: US,0.01

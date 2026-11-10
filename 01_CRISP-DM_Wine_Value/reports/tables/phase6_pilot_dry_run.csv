@@ -1,0 +1,28 @@
+,value
+wines,400
+within gain (pp),5.25
+within gain LB (pp),1.2101555547199143
+BO2 passes,True
+best simple rule,rule: winery track record
+top-20% lift,1.8076923076923077
+top-20% lift LB,1.4342431761786603
+BO1 passes,True
+BO1 passes (after comparator rule),True
+joint gate passes,True
+final,True
+decision,deploy shortlist and show score band internally
+decision at,400
+wines used,400
+wines received,400
+shortlist paused at,
+band withdrawn everywhere,False
+share of wines with band withdrawn,0.5225
+sources with enough wines,3
+meets the source minimum,True
+primary scorer,WineEnthusiast
+wines from other scorers (sensitivity only),0
+wines without a note source,0
+price deflator,1.0
+winery coverage (BO1 comparator),0.7075
+comparator degraded,False
+minimum winery coverage,0.5

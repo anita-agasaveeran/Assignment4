@@ -46,7 +46,7 @@ The data is CC BY-NC-SA 4.0 (Zack Thoutt / WineEnthusiast). Derived outputs in t
 | 3 · Data Preparation | ✅ | ✅ | 2 rounds (7 → 8/10) |
 | 4 · Modeling | ✅ | ✅ | 3 rounds (6 → 7 → 8/10) |
 | 5 · Evaluation | ✅ | ✅ | 3 rounds (6 → 8 → 9/10) |
-| 6 · Deployment | ☐ | ☐ | 0 |
+| 6 · Deployment | ✅ | ✅ | 6 rounds (7 → 8 → 8 → 8 → 8 → 9/10), no major issues; round-6 minors fixed (revision 7) |
 | Medium article · Video script | ☐ | | 0 |
 
 The CRISP-DM project originally used a bakery dataset that turned out to be unsuitable. See [`../_archive/README.md`](../_archive/README.md).

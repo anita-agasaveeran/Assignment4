@@ -16,6 +16,13 @@ SEED = 42
 
 # --- Phase 1: business definitions ---
 VALUE_MAX_PRICE = 25.0   # USD (2017 prices). "Great Value" shelf price cap
+# Price basis of every deployed input (Phase 6 critic round 3 issue 2). The models, the ≤ $25 pool and the verdict are in
+# 2017 dollars (the data's prices). production.prepare_new multiplies a candidate's price by PRICE_DEFLATOR to convert it.
+# 1.0 = prices taken as 2017 dollars (the course demonstration). Before rollout step 0 the analyst sets it, in a dated
+# commit, to CPI-U (BLS series CUUR0000SA0, US city average, all items) 2017 annual average / CPI-U for the month before
+# round 1, and keeps it fixed for the whole pilot. It is recorded in every monitoring report and pilot gate file.
+PRICE_DEFLATOR = 1.0
+PRICE_INDEX = "CPI-U (BLS CUUR0000SA0), 2017 annual average = base"
 VALUE_MIN_POINTS = 90    # WineEnthusiast score that counts as a value pick at or below the cap
 SCORE_TOLERANCE = 2.0    # a score prediction is "usable" if within +/- 2 points
 SHORTLIST_K = 100        # wines a buying team can sample in a cycle (assumption A4)
@@ -91,6 +98,98 @@ PILOT_TOP20_LIFT_LOWER = 1.0       # and its winery-clustered 90% lower bound mu
 PILOT_STOP_RESIDUAL = 1.0
 PILOT_STOP_MIN_WINES = 50
 PILOT_STOP_CI = 0.80
+# Phase 6 (2026-11-08, before any pilot data; critic round 3 issues 2-4): the rest of the pilot protocol (winevalue.pilot).
+# Checks every PILOT_CHECK_EVERY scored wines (in order of arrival). The decision point is the first check with >= 400 wines
+# AND the source minimum below; the final gate uses ALL wines up to it, whatever was withdrawn. No decision point by
+# PILOT_MAX_WINES -> the pilot stops with no deployment (Phase 6 critic round 1, issue 8).
+PILOT_CHECK_EVERY = 100
+PILOT_MAX_WINES = 800
+# Pilot schedule (report §6.1, "Outcome data and schedule"; Phase 6 critic round 2 issue 2). Assumptions, no data:
+PILOT_ROUND_CANDIDATES = CANDIDATES_PER_CYCLE      # A7: ≤ $25 candidates per monthly round (A9); one constant, one value
+PILOT_REVIEW_YIELD = 0.10          # A8: share of ≤ $25 candidates that eventually get a published score (sensitivity 5-20%)
+PILOT_LAG_MEDIAN_MONTHS = 3        # A10: median months from round to published score (sensitivity 2-6); log-normal,
+PILOT_LAG_P90_RATIO = 3            #      90th percentile = 3 × the median
+PILOT_CAP_MONTHS = 12              # the pilot ends 12 calendar months after round 1 (or at PILOT_MAX_WINES); later scores unused
+PILOT_FALLBACK_MONTH = 6           # fallback check: at month 6, projected scored wines by month 12 below 400 -> panel fallback
+# A11 (note-source mix), revision 4 (Phase 6 critic round 3 issue 4): at least PILOT_MIN_SOURCES note sources must each
+# supply >= PILOT_MIN_SOURCE_SHARE of the ≤ $25 candidates (checked on round 1) and of the scored wines (re-checked at the
+# first 100). The share is phase6.choose_source_share: the smallest at which all sources reach 50 by 400 scored wines with
+# probability >= PILOT_SOURCE_SHARE_POWER (12.5%, revision 3's floor, gives 0.11).
+PILOT_SOURCE_SHARE_POWER = 0.80
+PILOT_MIN_SOURCE_SHARE = 0.15
+# Outcome scores (Phase 6 critic round 3 issue 5): the gate, the stop rule and the decision use scores from the scorer the
+# models were trained on; scores from other critics (pilot CSV column ``scorer``) are reported as a sensitivity only.
+PILOT_PRIMARY_SCORER = "WineEnthusiast"
+PILOT_PRIMARY_SCORER_ALIASES = ("Wine Enthusiast Magazine", "Wine Enthusiast Mag", "winemag", "winemag.com")   # same publication (critic round 4 #6)
+# BO1 comparator coverage (Phase 6 critic round 4 issue 1): the "winery track record" rule knows only training wineries.
+# If fewer than this share of the wines used at the decision point have a training winery (lockbox ≤ $25 pool: about 68%),
+# the shortlist part of the gate must also pass on the matched-winery wines alone (pilot.comparator_check).
+PILOT_MIN_WINERY_COVERAGE = 0.50
+PILOT_N_BOOT = 200                 # winery-bootstrap resamples for every pilot gate and check, simulated or real
+PILOT_MIN_SOURCES = 3              # the pilot must include >= 3 note sources with >= PILOT_STOP_MIN_WINES scored wines each;
+#                                    sources below that are pooled into one unit, checked like a source once it reaches 50
+# Shortlist futility pause (replaces "lift LB < 1.0", which fires too often at interim sizes): pause if the top-20% lift
+# point estimate is < PILOT_PAUSE_LIFT once >= PILOT_PAUSE_MIN_WINES wines are scored. PILOT_PAUSE_MIN_WINES is set by
+# pilot.choose_pause_min_wines on DEVELOPMENT folds only: the smallest size whose pause rate is <= PILOT_PAUSE_MAX_FALSE in
+# every development pool (notebook 6.1a asserts that this value matches the rule).
+PILOT_PAUSE_LIFT = 1.0
+PILOT_PAUSE_MAX_FALSE = 0.05
+PILOT_PAUSE_MIN_WINES = 200
+# Secondary analysis, reported only (§5.3 condition 4): per-source intercept = mean residual of a source's first 50 scored
+# wines, applied to its later wines, for sources with >= 100 scored wines.
+PILOT_INTERCEPT_FIRST = 50
+PILOT_INTERCEPT_MIN_WINES = 100
+# Monitoring (report §6.2; winevalue.monitoring): alert levels for one buying round, fixed before any pilot data.
+MONITOR_BY_ROUND_SIZE = "by round size"   # placeholder for a lower limit taken from MONITOR_RANKER_LOWER
+MONITOR_ALERTS = {
+    "share of note words outside the model vocabulary": ("above", 0.03),
+    "median note length (words)": ("outside", (20, 80)),
+    "share unmapped colour": ("above", 0.05),
+    "share of grapes rare or unseen in training": ("above", 0.08),
+    # Below 25%: prices outside the 2017 basis (a wrong or missing deflator). Above 95% (revision 6, critic round 5 issue 1):
+    # the candidate file looks pre-filtered at $25, so the deflator could not have restored wines priced above $25 nominal
+    # that are ≤ $25 in 2017 dollars. The candidate file is every candidate of the round, at any price.
+    "≤ $25 share": ("outside", (0.25, 0.95)),   # re-centred at rollout step 1 if the retailer's share is unlike the data's
+    # Two-sided since Phase 6 critic round 2 (issue 6): a ranker level that falls is as much a broken input as one that
+    # rises. The lower limit depends on the round's number of ≤ $25 candidates (MONITOR_RANKER_LOWER below); upper
+    # limits unchanged.
+    "mean P(90+) (≤ $25)": ("outside", (MONITOR_BY_ROUND_SIZE, 0.40)),
+    "share above the development 90th percentile (≤ $25)": ("outside", (MONITOR_BY_ROUND_SIZE, 0.40)),
+    # Revision 4 (Phase 6 critic round 3 issue 1a): a country the models never saw is scored as unknown origin.
+    # Lockbox 0.4% of rows; the limit is about 5x that.
+    "share of countries unseen in training": ("above", 0.02),
+}
+# Lower limits of the two ranker indicators (mean P(90+), share above the development P90), by the round's number of
+# ≤ $25 candidates: monitoring.choose_lower_limits on out-of-fold, winery-clustered development rounds of that many ≤ $25
+# candidates (the 1st percentile in the lowest fold, rounded down). Revision 4 used one size; smaller rounds vary more
+# (critic round 4 issue 5), so revision 5 sets the limits per size. An A7 round (about 1,000 ≤ $25 candidates, about
+# 2,400 candidates at all prices) uses the 1,000 row; the smaller rows serve short rounds. A round uses the row for the
+# largest size it reaches; below
+# MONITOR_RANKER_MIN_POOL ≤ $25 candidates the two ranker alerts are not read. Notebook 6.2a asserts the table.
+MONITOR_LOWER_LIMIT_QUANTILE = 0.01
+MONITOR_RANKER_LOWER = {200: (0.06, 0.01), 300: (0.07, 0.02), 600: (0.07, 0.03), 1000: (0.08, 0.03)}
+MONITOR_RANKER_MIN_POOL = 200      # below this, the LOWER ranker limits are not read (the upper ones always are)
+# Self-referenced rule (revision 6, critic round 5 issue 8): from the 4th round on, alert if the share above the development
+# P90 falls below MONITOR_RELATIVE_DROP × its median over the previous MONITOR_RELATIVE_HISTORY reference rounds (each with
+# ≥ MONITOR_RELATIVE_MIN_POOL ≤ $25 candidates, and without a self-referenced alert of its own unless the analyst accepted
+# the round: revision 7, critic round 6 issue 1). It sees a fall from the feed's own level, which the fixed lower limits,
+# set at the lowest development fold's level, cannot. score.py reads the history from the earlier rounds' monitoring
+# reports, by round number. The drop (0.5) and the history (3 rounds) are judgement calls; it sees a fall to about half
+# the feed's own level or more, not milder ones (notes cut to 35 or 40 words are missed).
+MONITOR_RELATIVE_DROP = 0.5
+MONITOR_RELATIVE_HISTORY = 3
+# The rule is read only in rounds (and history rounds) with at least MONITOR_RELATIVE_MIN_POOL ≤ $25 candidates: the
+# smallest tabulated round size from which its false-alert rate on consecutive out-of-fold development rounds is at most
+# MONITOR_RELATIVE_MAX_FALSE in every fold (monitoring.choose_relative_min_pool; notebook 6.2a asserts it). An A7 round
+# (about 1,000) qualifies.
+MONITOR_RELATIVE_MAX_FALSE = 0.02
+MONITOR_RELATIVE_MIN_POOL = 600
+# The ≤ $25-share band assumes the retailer's price mix resembles the data's (41-48% ≤ $25). Rollout step 1 measures the
+# retailer's share s on the pre-tool rounds used for the business baseline; if s is outside MONITOR_SHARE_KEEP, the band
+# becomes (max(0.05, s - 0.20), min(0.98, s + 0.45)) (monitoring.share_band; revision 7, critic round 6 issue 9), a
+# pre-registered step-0 change logged with the deflator.
+MONITOR_SHARE_KEEP = (0.35, 0.60)
+MONITOR_SHORT_NOTE_WORDS = 10
 
 # --- Phase 1: pre-registered buyer-insight hypotheses (BSC5) ---
 # Each is tested in development data AND the lockbox. One-sided 90% winery-clustered bootstrap.

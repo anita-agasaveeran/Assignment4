@@ -22,6 +22,6 @@ Each round is saved as `phase<N>_<name>_round<R>.md`, using [`_template.md`](_te
 | 2 · Data Understanding | 3 | 8.5/10, no major issues | ✅ passed |
 | 3 · Data Preparation | 2 (+ revision 3 for round-2 minors) | 8/10, no major issues | ✅ passed |
 | 4 · Modeling | 3 (+ revision 4 for round-3 minors) | 8/10, no major issues | ✅ passed |
-| 5 · Evaluation | 3 (+ revision 4 for round-3 minors) | 9/10, no major issues | ✅ passed (post-unseal state not yet committed) |
-| 6 · Deployment | 0 | – | not started |
+| 5 · Evaluation | 3 (+ revision 4 for round-3 minors) | 9/10, no major issues | ✅ passed (committed in `d42db02`, tag `wine-phase5-rev4`) |
+| 6 · Deployment | 6 | 9/10, no major issues (round 6) | ✅ passed; all 9 round-6 minors fixed in revision 7 (re-execution 13) |
 | Medium article | 0 | – | not started |

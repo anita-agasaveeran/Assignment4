@@ -1,0 +1,21 @@
+rows,verdict,wines,value rate
+development fold 0,Likely value,40,0.85
+development fold 0,Long shot,5342,0.20909771621115686
+development fold 0,Probable value,1326,0.552790346907994
+development fold 0,Unlikely value,4078,0.029671407552721924
+development fold 1,Likely value,34,1.0
+development fold 1,Long shot,3861,0.19632219632219633
+development fold 1,Probable value,539,0.7439703153988868
+development fold 1,Unlikely value,8224,0.011551556420233464
+development fold 3,Likely value,27,0.8888888888888888
+development fold 3,Long shot,3351,0.3604894061474187
+development fold 3,Probable value,630,0.6587301587301587
+development fold 3,Unlikely value,5016,0.07216905901116427
+development fold 4,Likely value,22,0.9090909090909091
+development fold 4,Long shot,3496,0.18792906178489702
+development fold 4,Probable value,820,0.5670731707317073
+development fold 4,Unlikely value,1796,0.026726057906458798
+lockbox,Likely value,207,0.8840579710144928
+lockbox,Long shot,3791,0.14006858348720655
+lockbox,Probable value,1586,0.519546027742749
+lockbox,Unlikely value,1704,0.02171361502347418

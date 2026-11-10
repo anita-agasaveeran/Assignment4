@@ -1,0 +1,75 @@
+pool,unit,name,wines,mean residual,±2 gain (pp)
+development fold 0,source,Roger Voss,10786,0.7179224629572699,12.302985351381421
+development fold 0,country,Austria,409,-0.7191415418707593,19.315403422982886
+development fold 0,country,France,7056,0.5540888500659535,12.060657596371883
+development fold 0,country,Portugal,3253,1.278706876538778,11.988933292345527
+development fold 1,source,Jim Gordon,2217,0.8136493406966849,21.33513757329725
+development fold 1,source,Michael Schachner,10441,0.4482503032345841,29.34584809884111
+development fold 1,country,Argentina,2673,0.9594399768527779,34.04414515525627
+development fold 1,country,Chile,3350,0.6724735738831008,27.791044776119406
+development fold 1,country,Spain,4174,-0.13910072001879478,28.10253953042645
+development fold 1,country,US,2259,0.8591774651619547,21.115537848605577
+development fold 3,source,Anna Lee C. Iijima,2542,-0.36221085444162016,15.460267505900866
+development fold 3,source,Joe Czerwinski,2711,0.5261056154699445,16.451493913684985
+development fold 3,source,Paul Gregutt,3706,-1.4347543236446914,7.825148407987048
+development fold 3,country,Australia,1084,0.37262359510976345,19.464944649446494
+development fold 3,country,France,570,1.8556163794984226,-4.912280701754386
+development fold 3,country,Germany,915,-0.8096088269851592,10.05464480874317
+development fold 3,country,New Zealand,737,-0.07349872738430759,24.151967435549526
+development fold 3,country,US,5371,-1.0587163107617101,12.157884937628003
+development fold 4,source,Alexander Peartree,203,0.5756265373907749,38.42364532019704
+development fold 4,source,Lauren Buzzeo,1151,1.5102726299081548,9.904430929626413
+development fold 4,source,Matt Kettmann,1535,0.7732088103039287,13.550488599348535
+development fold 4,source,Mike DeSimone,263,-1.4466887018936831,-2.6615969581749046
+development fold 4,source,Susan Kostrzewa,763,1.096901221517072,5.897771952817824
+development fold 4,source,Virginie Boone,2219,1.0779112903493346,10.229833258224426
+development fold 4,country,France,466,1.2978624813116528,21.67381974248927
+development fold 4,country,Greece,320,-0.2408358274249701,10.0
+development fold 4,country,Israel,225,-0.7408720448965442,9.777777777777779
+development fold 4,country,South Africa,770,1.7898816741909995,-5.844155844155844
+development fold 4,country,US,4157,1.0085505901239913,12.701467404378159
+"lockbox, mixed writers",source,Anne Krebiehl MW,1528,0.1620989163620104,20.091623036649214
+"lockbox, mixed writers",source,Jeff Jenssen,336,-1.3888263471645812,-16.36904761904762
+"lockbox, mixed writers",source,Kerin O’Keefe,3674,1.3747754686293912,1.3609145345672293
+"lockbox, mixed writers",source,Sean P. Sullivan,1750,0.7258299975073319,13.885714285714284
+"lockbox, mixed writers",country,Austria,948,0.21973758193915688,16.244725738396625
+"lockbox, mixed writers",country,France,573,0.08536323987959507,26.527050610820247
+"lockbox, mixed writers",country,Italy,3674,1.3747754686293912,1.3609145345672293
+"lockbox, mixed writers",country,US,1746,0.7294103746893958,13.917525773195877
+"development fold 0, masked",source,Roger Voss,10786,0.5212092038525793,12.488410903022437
+"development fold 0, masked",country,Austria,409,-0.8403162349260587,15.403422982885084
+"development fold 0, masked",country,France,7056,0.3031603443843312,12.599206349206348
+"development fold 0, masked",country,Portugal,3253,1.1907644015374867,12.081155856132801
+"development fold 1, masked",source,Jim Gordon,2217,0.7331565628126185,22.46278755074425
+"development fold 1, masked",source,Michael Schachner,10441,0.5141938594118711,28.359352552437507
+"development fold 1, masked",country,Argentina,2673,0.9878226404344046,33.48297792742237
+"development fold 1, masked",country,Chile,3350,0.7257919785827498,25.731343283582092
+"development fold 1, masked",country,Spain,4174,-0.03706192505164809,27.719214183037856
+"development fold 1, masked",country,US,2259,0.780965252492951,22.177954847277555
+"development fold 3, masked",source,Anna Lee C. Iijima,2542,-0.26287247827024834,15.538945712037766
+"development fold 3, masked",source,Joe Czerwinski,2711,0.6601381923475125,13.869420877904831
+"development fold 3, masked",source,Paul Gregutt,3706,-1.2740564168742918,10.172692930383162
+"development fold 3, masked",country,Australia,1084,0.4807085539822831,17.066420664206642
+"development fold 3, masked",country,France,570,1.9893086223666843,-7.719298245614035
+"development fold 3, masked",country,Germany,915,-0.782194978572535,10.163934426229508
+"development fold 3, masked",country,New Zealand,737,0.10087107773790177,21.30257801899593
+"development fold 3, masked",country,US,5371,-0.9033020291499217,13.87078756283746
+"development fold 4, masked",source,Alexander Peartree,203,0.623358139450754,36.94581280788177
+"development fold 4, masked",source,Lauren Buzzeo,1151,1.7252926004338098,3.735881841876629
+"development fold 4, masked",source,Matt Kettmann,1535,0.9566844268369978,9.511400651465799
+"development fold 4, masked",source,Mike DeSimone,263,-1.2387743707197758,3.041825095057034
+"development fold 4, masked",source,Susan Kostrzewa,763,1.0635634357595596,5.373525557011796
+"development fold 4, masked",source,Virginie Boone,2219,1.1848674776071193,8.517350157728707
+"development fold 4, masked",country,France,466,1.4161207194541452,18.669527896995707
+"development fold 4, masked",country,Greece,320,-0.29049694704943263,8.125
+"development fold 4, masked",country,Israel,225,-0.4710889357862501,12.444444444444445
+"development fold 4, masked",country,South Africa,770,1.9780572848421074,-11.298701298701298
+"development fold 4, masked",country,US,4157,1.1371926762449664,10.079384171277365
+"lockbox, mixed writers, masked",source,Anne Krebiehl MW,1528,0.3392537055159592,16.819371727748692
+"lockbox, mixed writers, masked",source,Jeff Jenssen,336,-1.4024429720470608,-17.261904761904763
+"lockbox, mixed writers, masked",source,Kerin O’Keefe,3674,1.6017210704069065,-5.770277626565052
+"lockbox, mixed writers, masked",source,Sean P. Sullivan,1750,0.7348547039791039,12.114285714285716
+"lockbox, mixed writers, masked",country,Austria,948,0.45573316577049433,12.130801687763713
+"lockbox, mixed writers, masked",country,France,573,0.16711107013057436,24.60732984293194
+"lockbox, mixed writers, masked",country,Italy,3674,1.6017210704069065,-5.770277626565052
+"lockbox, mixed writers, masked",country,US,1746,0.7386053738096438,12.142038946162657

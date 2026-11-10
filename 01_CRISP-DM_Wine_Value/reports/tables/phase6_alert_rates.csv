@@ -1,0 +1,3 @@
+,share of note words outside the model vocabulary,median note length (words),share unmapped colour,share of grapes rare or unseen in training,≤ $25 share,mean P(90+) (≤ $25),share above the development 90th percentile (≤ $25),share of countries unseen in training,self-referenced drop,any alert,candidates per round
+development (training rows; in-sample for vocabulary and P(90+)),0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,2067.0
+lockbox (new writers),0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,2442.0

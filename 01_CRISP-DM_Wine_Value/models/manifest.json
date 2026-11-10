@@ -1,0 +1,32 @@
+{
+  "artifact": "value_finder.joblib",
+  "sha1": "38fe5c8a2559f87a9b1a547b906b43af71b59308",
+  "bytes": 4644869,
+  "info": {
+    "training rows": 100530,
+    "quality alpha": 1.0,
+    "ranker alpha": 4.0,
+    "calibration": [
+      7.956775354691285,
+      0.917028407166588
+    ],
+    "band half-width": 2.671402615995783,
+    "selected": [
+      "calibrated ridge (all OOF)",
+      "ridge + log price",
+      [
+        "nmf",
+        8
+      ]
+    ],
+    "frozen code": "8632fba",
+    "calibration key": "calibrated ridge (all OOF)"
+  },
+  "lockbox reproduction (max abs difference)": {
+    "ridge": 0.0,
+    "calibrated ridge (all OOF)": 0.0,
+    "ridge + log price": 0.0,
+    "P(90+)": 0.0,
+    "serving path (raw inputs, prepare_new)": 0.0
+  }
+}
