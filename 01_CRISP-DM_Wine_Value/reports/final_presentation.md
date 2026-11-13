@@ -1,6 +1,6 @@
 # Final Presentation: Finding Value Wines (CRISP-DM 6.3)
 
-*About 12 slides, 15 minutes, for the buying lead and the analytics manager. Every number comes from `reports/final_report.md`, and the section is given on each slide. The recorded walkthrough (`video/script.md`) follows the same order.*
+*About 12 slides, 15 minutes, for the buying lead and the analytics manager. Every number comes from `reports/final_report.md`, and the section is given on each slide. The recorded walkthrough video follows the same order.*
 
 | # | Slide title (the takeaway) | Content | Speaker notes |
 |---|---|---|---|

@@ -25,7 +25,8 @@
 | 4 Data mining (k-means/Ward, PELT, STL + Isolation Forest, forecasting) | ✅ |
 | 5 Interpretation / evaluation (seal lifted once; all four rules reported) | ✅ (critic round 2: 7.5/10, 2 MAJOR issues fixed; [log](critiques/kdd_steps4-6_round2.md)) |
 | 6 Using the knowledge (Streamlit dashboard, `refresh.py`, knowledge base) | ✅ ([deployment](deployment/)) |
-| Final report · video script | ✅ drafts ([report](reports/final_report.md), [video](video/script.md)); the Medium article draft is kept outside the repo |
+| Final report | ✅ draft ([report](reports/final_report.md)) |
+| Medium article | ✅ [published on Medium](https://medium.com/@anita.agasaveeran/is-canadas-grid-getting-less-dependent-on-burning-fuel-81a2680c654d) |
 
 ## Layout
 | Path | What |

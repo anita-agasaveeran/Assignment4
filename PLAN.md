@@ -35,7 +35,7 @@ Assignment4/
     ├── reports/                 # detailed final report (Markdown → PDF) + figures
     ├── critiques/               # critic review log, round by round
     ├── article/                 # Medium article draft (later moved outside the repo)
-    └── video/                   # walkthrough script + shot list
+    └── video/                   # walkthrough script + shot list (later moved outside the repo)
 ```
 
 **Notebooks:** they will be Colab-ready. Each opens with an "Open in Colab" badge, a pip-install cell, and code that loads data from the GitHub raw URL (or from Kaggle for the large flight file). Every phase has its own section, plus a "phase outputs" checklist that maps to the methodology's official tasks. Random seeds will be fixed, and I'll run every notebook top to bottom locally before it's committed.
