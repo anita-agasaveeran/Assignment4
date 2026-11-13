@@ -1,0 +1,201 @@
+{
+  "acceptance": [
+    {
+      "goal": "K1 archetypes",
+      "rule": "ARI(2016-24 vs 2025-26 clusters) >= 0.7",
+      "result": "ARI = 1.00 (secondary 1.00)",
+      "verdict": "MET"
+    },
+    {
+      "goal": "K2 structural change",
+      "rule": ">= 3 non-Ontario provinces with a stable AND persistent change point",
+      "result": "5 qualify: NL, PE, NS, AB, BC (post hoc, net + burning: NL, NS, AB)",
+      "verdict": "MET as written"
+    },
+    {
+      "goal": "K3 anomalies",
+      "rule": "event-level precision >= 0.5 AND permutation p <= 0.05",
+      "result": "0.11, p = 0.246",
+      "verdict": "NOT MET"
+    },
+    {
+      "goal": "K4 prediction",
+      "rule": "sealed pooled WAPE ratio <= 0.9 AND better at both origins",
+      "result": "ratio 1.015 [0.92, 1.15]; both: False",
+      "verdict": "NOT MET"
+    }
+  ],
+  "findings": [
+    {
+      "rank": 1,
+      "finding": "Alberta's and Nova Scotia's combustion shares are structurally falling (AB 2023-01, NS 2021-12), driven by burning less, and held in 2025-26",
+      "evidence": "K2 met as written; these two survive the post-hoc sensitivity",
+      "confidence": "high"
+    },
+    {
+      "rank": 2,
+      "finding": "The national combustion share is not falling (21.2% in 2016, 22.9% in 2025): Ontario +18.6 TWh of combustion vs Alberta -6.7; the 2023-24 hydro drought explains about 40% of the share rise",
+      "evidence": "descriptive decomposition (national 2025 figure already seen in the front pass)",
+      "confidence": "medium-high"
+    },
+    {
+      "rank": 3,
+      "finding": "Five grid archetypes persist at k = 5: hydro (QC, MB, BC, YT), combustion (AB, SK, NS, NT, NU), nuclear-mixed (ON, NB), PEI importer, NL exporter",
+      "evidence": "K1: ARI 1.00 at k = 5 (0.27-0.84 at other k)",
+      "confidence": "high (k-specific)"
+    },
+    {
+      "rank": 4,
+      "finding": "Simple statistical models don't reliably beat seasonal naive 12 months ahead",
+      "evidence": "K4 not met: sealed ratio 1.015",
+      "confidence": "high"
+    },
+    {
+      "rank": 5,
+      "finding": "Ontario's combustion has risen since 2023: about half nuclear substitution since 2019, the rest demand growth and exports",
+      "evidence": "K2 change point not stable (67%); confirmation partly spent",
+      "confidence": "medium (descriptive)"
+    },
+    {
+      "rank": 6,
+      "finding": "Hypothesis: monthly anomalies are mostly generation-trade substitution (droughts, export surges, some outages), not single weather events",
+      "evidence": "K3 not met (IF event-level precision 0.11, p = 0.25); max-|z| comparator p = 0.012",
+      "confidence": "low (untested)"
+    }
+  ],
+  "k2_note": "K2 is MET as the pre-registered rule is written (NL, PE, NS, AB, BC). In substance: two large burning-driven declines (AB, NS) plus a small NL decline; BC and PE qualified because a 12-month blip ended. Post-hoc sensitivity (net change >= 1 pp and burning-driven) leaves NL, NS, AB.",
+  "k3_note": "K3 NOT MET: the anomaly tab is unvalidated monitoring, not validated knowledge.",
+  "k2": [
+    {
+      "province": "NL",
+      "primary change": "2018-02",
+      "direction": "falling (less combustion)",
+      "pre (pp)": "1.677635461538468",
+      "post (pp)": "0.2307599060632202",
+      "last dev segment (pp)": "-1.278291013208765",
+      "2025\u201326 mean (pp)": "-0.4562792437765627",
+      "stable": "True",
+      "persistent": "True",
+      "attribution": "burning",
+      "verdict": "qualifies"
+    },
+    {
+      "province": "PE",
+      "primary change": "2018-12",
+      "direction": "falling (less combustion)",
+      "pre (pp)": "1.8617911659160922",
+      "post (pp)": "-0.363192114078616",
+      "last dev segment (pp)": "-0.363192114078616",
+      "2025\u201326 mean (pp)": "-0.39756968740673904",
+      "stable": "True",
+      "persistent": "True",
+      "attribution": "burning",
+      "verdict": "qualifies"
+    },
+    {
+      "province": "NS",
+      "primary change": "2021-12",
+      "direction": "falling (less combustion)",
+      "pre (pp)": "2.0554571973139084",
+      "post (pp)": "-3.9442557029537113",
+      "last dev segment (pp)": "-3.9442557029537113",
+      "2025\u201326 mean (pp)": "-4.014213275483492",
+      "stable": "True",
+      "persistent": "True",
+      "attribution": "burning",
+      "verdict": "qualifies"
+    },
+    {
+      "province": "NB",
+      "primary change": "2024-01",
+      "direction": "rising (more combustion)",
+      "pre (pp)": "0.05696382095287042",
+      "post (pp)": "16.85486246759137",
+      "last dev segment (pp)": "16.85486246759137",
+      "2025\u201326 mean (pp)": "13.079475363678448",
+      "stable": "False",
+      "persistent": "True",
+      "attribution": "denominator",
+      "verdict": "not stable"
+    },
+    {
+      "province": "QC",
+      "primary change": "none",
+      "direction": NaN,
+      "pre (pp)": NaN,
+      "post (pp)": NaN,
+      "last dev segment (pp)": NaN,
+      "2025\u201326 mean (pp)": NaN,
+      "stable": NaN,
+      "persistent": NaN,
+      "attribution": NaN,
+      "verdict": "no change >= 1 pp"
+    },
+    {
+      "province": "ON",
+      "primary change": "2023-06",
+      "direction": "rising (more combustion)",
+      "pre (pp)": "0.8263884058687601",
+      "post (pp)": "6.460686469960601",
+      "last dev segment (pp)": "6.460686469960601",
+      "2025\u201326 mean (pp)": "10.873527768551558",
+      "stable": "False",
+      "persistent": "True",
+      "attribution": "burning",
+      "verdict": "not stable"
+    },
+    {
+      "province": "MB",
+      "primary change": "none",
+      "direction": NaN,
+      "pre (pp)": NaN,
+      "post (pp)": NaN,
+      "last dev segment (pp)": NaN,
+      "2025\u201326 mean (pp)": NaN,
+      "stable": NaN,
+      "persistent": NaN,
+      "attribution": NaN,
+      "verdict": "no change >= 1 pp"
+    },
+    {
+      "province": "SK",
+      "primary change": "2020-10",
+      "direction": "rising (more combustion)",
+      "pre (pp)": "-2.9825381772700266",
+      "post (pp)": "2.214217333881078",
+      "last dev segment (pp)": "-1.1687246421294955",
+      "2025\u201326 mean (pp)": "-5.309003838958212",
+      "stable": "True",
+      "persistent": "False",
+      "attribution": "burning",
+      "verdict": "did not persist"
+    },
+    {
+      "province": "AB",
+      "primary change": "2023-01",
+      "direction": "falling (less combustion)",
+      "pre (pp)": "-1.4533593804750327",
+      "post (pp)": "-6.668648228360152",
+      "last dev segment (pp)": "-9.699908514945859",
+      "2025\u201326 mean (pp)": "-13.345322553620731",
+      "stable": "True",
+      "persistent": "True",
+      "attribution": "burning",
+      "verdict": "qualifies"
+    },
+    {
+      "province": "BC",
+      "primary change": "2020-03",
+      "direction": "falling (less combustion)",
+      "pre (pp)": "1.9084192263411692",
+      "post (pp)": "-0.5321772485238718",
+      "last dev segment (pp)": "0.569935309762448",
+      "2025\u201326 mean (pp)": "-1.1525486547839265",
+      "stable": "True",
+      "persistent": "True",
+      "attribution": "denominator",
+      "verdict": "qualifies"
+    }
+  ],
+  "k4_note": "Deployed forecast = seasonal naive. The combo_avg3_ets challenger beat it on development origins (ratio 0.88) but not on the sealed origins (ratio 1.015), so it is shown for comparison only."
+}

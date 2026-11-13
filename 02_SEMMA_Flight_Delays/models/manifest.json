@@ -1,0 +1,43 @@
+{
+ "champion": "logistic regression",
+ "params": {
+  "C": 0.1
+ },
+ "trained_on": "Jan 2025 - Apr 2026 (train + validation)",
+ "train_rows": 800000,
+ "features": [
+  "dep_hour",
+  "arr_hour",
+  "day_of_week",
+  "distance",
+  "sched_elapsed_time",
+  "dep_min_et",
+  "origin_hour_sched",
+  "origin_day_sched",
+  "dest_hour_sched",
+  "carrier_day_sched",
+  "days_to_holiday",
+  "origin_d1",
+  "dest_d1",
+  "carrier_d1",
+  "nation_d1",
+  "origin_d1_n",
+  "origin_w1",
+  "dest_w1",
+  "carrier_w1",
+  "nation_w1",
+  "route_w4",
+  "carrier_hour_w4",
+  "origin_hour_w4",
+  "flight_w4",
+  "flight_w4_n",
+  "carrier",
+  "origin",
+  "dest"
+ ],
+ "test_top2_lift": 2.385529340574658,
+ "test_roc_auc": 0.7180981116153694,
+ "decision_clock": "16:45 US Eastern, the day before",
+ "created": "2026-11-11",
+ "code_fingerprint": "d61fb8986e66c36d"
+}

@@ -16,8 +16,9 @@ def locate_raw_dir() -> Path:
     """
     if (LOCAL_RAW_DIR / "flights.parquet").exists():
         return LOCAL_RAW_DIR
-    import kagglehub  # needs Kaggle credentials in Colab (kaggle.json or KAGGLE_USERNAME/KAGGLE_KEY)
-    return Path(kagglehub.dataset_download(KAGGLE_DATASET))
+    import kagglehub  # public dataset: anonymous download works (checked 2026-11-09, kagglehub 1.0.3)
+    from .config import KAGGLE_DATASET_VERSION
+    return Path(kagglehub.dataset_download(f"{KAGGLE_DATASET}/versions/{KAGGLE_DATASET_VERSION}"))
 
 
 def load_flights(columns=None) -> pd.DataFrame:

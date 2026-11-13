@@ -1,4 +1,4 @@
-# Phase {N} · {Phase name}: Critic Round {R}
+# {Stage}: Critic Round {R}
 
 - **Date:** YYYY-MM-DD
 - **Reviewer:** Claude critic (independent session), persona from `critic_prompt.md`
@@ -7,7 +7,7 @@
 ## Score: X / 10
 
 ## Task coverage
-| CRISP-DM task / output | Present / Partial / Missing |
+| SEMMA task / output | Present / Partial / Missing |
 |---|---|
 
 ## Issues raised

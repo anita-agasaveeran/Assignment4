@@ -1,0 +1,5 @@
+goal,rule,result,verdict
+K1 archetypes,ARI(2016-24 vs 2025-26 clusters) >= 0.7,ARI = 1.00 (secondary 1.00),MET
+K2 structural change,>= 3 non-Ontario provinces with a stable AND persistent change point,"5 qualify: NL, PE, NS, AB, BC (post hoc, net + burning: NL, NS, AB)",MET as written
+K3 anomalies,event-level precision >= 0.5 AND permutation p <= 0.05,"0.11, p = 0.246",NOT MET
+K4 prediction,sealed pooled WAPE ratio <= 0.9 AND better at both origins,"ratio 1.015 [0.92, 1.15]; both: False",NOT MET

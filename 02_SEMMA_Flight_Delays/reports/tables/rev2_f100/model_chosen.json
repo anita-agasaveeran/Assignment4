@@ -1,0 +1,22 @@
+{
+ "chosen_params": {
+  "logistic regression": {
+   "C": 0.1
+  },
+  "decision tree": {
+   "max_depth": 16
+  },
+  "neural network": {
+   "hidden": [
+    64,
+    32
+   ],
+   "alpha": 0.0001
+  },
+  "gradient boosting": {
+   "num_leaves": 255,
+   "min_child_samples": 500
+  }
+ },
+ "sample_rate": 1.0
+}

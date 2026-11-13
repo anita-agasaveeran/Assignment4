@@ -1,0 +1,15 @@
+{
+  "written_utc": "2026-11-11T21:14:59+00:00",
+  "note": "Written after KDD critic round 1 fixes, before any K1-K3 mining. Disclosure: the K4 development backtest (development origins only) had been run once before this manifest; K4 rules were not changed by its result.",
+  "files": {
+    "src/kddenergy/config.py": "f068945ac7be4f497f11110ac193f7191cd17f43fb017594b7034c646ea846c5",
+    "src/kddenergy/selection.py": "3743ed5de8506bf0c8984efe0ee4618f1732c875c2ee650b7194f4859f5a20fc",
+    "src/kddenergy/preprocess.py": "6b53e1fa8db11ac93d65feca6ceb3f57a4a9584ef3f7127c5911f16a760851c5",
+    "src/kddenergy/transform.py": "e2af641a42315208055bce95ddc9755042e4bacdddd46bbb32bd3884f99505fe",
+    "src/kddenergy/mining.py": "b730264dff06d4e64bed6315f0ac895c144533aae3f6b9b19fb3aca44df5817b",
+    "src/kddenergy/forecast.py": "d3d0857b88e7ca9e889c9b3cf931c2addc34ef5a5fcf56af6c731509e267621f",
+    "data/external/event_catalogue.csv": "ee336e9b5e7c57829f92b229eaa7b1e5aaa6ad92feeccd0542af0a905785a22b",
+    "tests/test_kdd_steps.py": "dd474a0a6f639c94b587dfd1b7941eeaaccde4ee1e2962d9c56d38d961cdf230",
+    "tests/test_mining.py": "22ed25186269eee0593e2fe67ec36bdfb11af2a7877c11cbaeb06aaceaa5f4f4"
+  }
+}

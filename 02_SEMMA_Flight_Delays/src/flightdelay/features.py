@@ -51,3 +51,17 @@ def previous_day_rates(d: pd.DataFrame, target: str = "disrupted", cutoff: int =
 SCHEDULE_FEATURES = ["day_of_week", "dep_hour", "arr_hour", "carrier", "origin", "dest", "distance",
                      "sched_elapsed_time", "origin_hour_sched", "origin_day_sched"]
 DAY_BEFORE_FEATURES = ["origin_prev_day", "dest_prev_day", "carrier_prev_day"]
+
+
+DEDUP_KEY = ["flight_date", "airline_code", "flight_number", "origin", "sched_dep_time"]
+
+
+def build_feature_frame(sched: pd.DataFrame) -> pd.DataFrame:
+    """Front-pass feature frame: de-duplicate, build schedule counts and previous-day rates on the FULL schedule
+    (tail-less cancellations included), THEN restrict to the scored population (assumption A-pop)."""
+    sched = sched.drop_duplicates(DEDUP_KEY)
+    feat = previous_day_rates(schedule_features(sched))
+    feat = feat[feat["tail_number"].notna() & feat["sched_elapsed_time"].gt(0)].reset_index(drop=True)
+    for col in ["carrier", "origin", "dest"]:
+        feat[col] = feat[col].astype(str)
+    return feat

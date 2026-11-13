@@ -1,0 +1,22 @@
+{
+ "created": "2026-11-11 14:15:08",
+ "fingerprint": "d61fb8986e66c36d",
+ "files": {
+  "reports/tables/model_chosen.json": "f6cd29f3bf16d1e839a2a04d02b7853e57744636fc45384c77cea859d30b3a03",
+  "reports/tables/model_comparison.csv": "12804da65c64be486fb8e6e12408da90b1b6e0c795747659f0f7ddbd271cc3e7",
+  "scripts/run_assess.py": "a7d11834ba797a3949d998733363284130c6afb0190ede70f10a1f5c58a3bd7d",
+  "scripts/run_learning_curve.py": "2246c818c8325ddb5b9755b8eb5851fa81b7a06f451e0aad6b2943272462032e",
+  "scripts/run_model.py": "e635b05c2ad1c2d51fd9a7fd6c1860e9e94e38d69bf688b5b3928661c0c68502",
+  "src/flightdelay/__init__.py": "fb38d8aeefea823d2b54cf2a30ac29b1ad201a59f9b738f7f57b44b319b2b84e",
+  "src/flightdelay/config.py": "6c46e6c1d9f82b412520225cfda77cbff8a24448c5828d7d74a2b7f63811181c",
+  "src/flightdelay/data.py": "d2645ec77881f4b90bd26dcf7e80b2f64174988571e9f118945d847fb4333ed0",
+  "src/flightdelay/features.py": "a8145aaacb86520d0fd9545ecdacd37fe28ae1f08242f52a700feac312618de4",
+  "src/flightdelay/lcurve.py": "ef50d1e38d9b226eb63dd79a8ad63cb75bee09700da3555242bfeda0d03010f3",
+  "src/flightdelay/metrics.py": "65409c5ab7c84f22389dd093aeadbb90e427eb29778145581724beda9aa1dee3",
+  "src/flightdelay/models.py": "04151ffdd0ec2d9a72bf619055e498f90613e4e268973fc0103bdbd465249247",
+  "src/flightdelay/modify.py": "ee36a3a4b4f639ff720e9a0ef0f181a9f7ce5ffda2b0d57bef3422bb82da8fdf",
+  "src/flightdelay/sampling.py": "12efb4bd12405cef5bc62d20fb296331ac58bb28f3d33746dbae4518d1b61f20"
+ },
+ "status": "completed",
+ "completed": "2026-11-11 14:17:42"
+}

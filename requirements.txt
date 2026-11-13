@@ -8,6 +8,7 @@ matplotlib>=3.8
 seaborn>=0.13
 scikit-learn>=1.4
 statsmodels>=0.14
+ruptures>=1.1        # change-point detection (KDD project)
 lightgbm>=4.3
 mlxtend>=0.23        # Apriori / FP-Growth association rules
 datasketch>=1.6      # MinHash LSH

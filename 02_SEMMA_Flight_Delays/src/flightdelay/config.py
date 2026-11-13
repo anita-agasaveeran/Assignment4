@@ -47,3 +47,40 @@ FORBIDDEN_FILES = ["airlines.csv", "airports.csv (departures/arrivals columns)"]
 # Rolling-origin check inside non-test data, so a summer validation exists before Assess (test = summer 2026).
 SUMMER_CHECK = {"train": ("2025-01-01", "2025-04-30"), "valid": ("2025-05-01", "2025-08-31")}
 # Refit policy: the final model is refit on train + valid (2025-01 .. 2026-04) before the single Assess run.
+
+# --- Sample stage (pre-registered on 2026-11-09, BEFORE any learning-curve run) ---
+# Pin the Kaggle dataset version so Colab downloads exactly the file analysed here (anonymous download works).
+KAGGLE_DATASET_VERSION = 1
+# Proportional stratified random sampling (SAS EM Sampling node, "stratified"). Strata = year-month x carrier group
+# x target: few levels, many flights per level (the SAS paper warns against strata with too few records per level).
+SAMPLE_STRATA = ["year_month", "carrier", "disrupted"]
+# Learning curve: repeated, nested stratified samples of the training window; the full window is the reference.
+LC_SIZES = (25_000, 50_000, 100_000, 200_000, 400_000, 800_000, 1_600_000, 3_200_000)
+LC_REPS = 5
+LC_WINDOWS = {"main": ((TRAIN_START, TRAIN_END), (VALID_START, VALID_END)),
+              "summer": (SUMMER_CHECK["train"], SUMMER_CHECK["valid"])}
+# LightGBM tree counts are set by early stopping on 10% of each training sample (added after a 1-rep smoke test at
+# 25k/400k showed fixed-size boosting over-fits small samples; no curve had been run). The full window is refit 3x.
+# Selection rule: n*_w = the smallest grid size whose mean shortfall vs the full-window mean is <= LC_DELTA_LIFT in per-day
+# top-2% lift AND <= LC_DELTA_AUC in pooled ROC-AUC, for BOTH LightGBM capacities, in window w. Sampling rate
+# f = max_w(n*_w / N_w), rounded UP to the next whole percent; the same f is used for train and validation months.
+# 0.02 lift = the largest effect of any single minor front-pass issue; well inside the +/-0.1 day-to-day intervals.
+LC_DELTA_LIFT = 0.02
+LC_DELTA_AUC = 0.002
+# Representativeness acceptance (sample vs its population): |SMD| < 0.05 on numerics, max level-share gap < 0.5 pp
+# on categoricals, every day present, and target rates by level within |z| < 3 except at the chance rate.
+REP_SMD_MAX, REP_GAP_PP_MAX, REP_Z_MAX = 0.05, 0.5, 3.0
+SAMPLE_FILE = SAMPLE_DIR / "semma_sample.parquet"
+
+# --- Assess targets (pre-registered in the Sample stage, 2026-11-11, from validation-period evidence only) ---
+# T1 (must): champion beats the BETTER of the two simple rules ON THE TEST MONTHS in per-day top-2% lift, with the
+#     90% 7-day-block bootstrap interval of the daily gap above 0.
+# T2 (target): that gap is >= +0.15 lift (front-pass summer-check gap +0.19, 90% interval +0.10..+0.28; a new summer
+#     and Spirit's exit argue for less).
+# T3 (robustness): T1 still holds when the tail-less cancellations are scored as disrupted.
+ASSESS_T2_GAP = 0.15
+# Champion choice (Model stage): highest mean per-day top-2% lift averaged over the main and summer-check windows.
+# Simpler / slower models: LR, decision tree and MLP are fit on an 800k stratified sample. Justified directly only for
+# the logistic regression (within 0.007 lift / 0.0005 AUC of its full window at 800k); for the tree and MLP it is an
+# extrapolation (critic round 1, M4), so Model also reports gradient boosting at 800k as an equal-n comparison.
+SMALL_MODEL_ROWS = 800_000

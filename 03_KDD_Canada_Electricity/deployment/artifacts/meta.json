@@ -1,0 +1,72 @@
+{
+  "refreshed_utc": "2026-11-11T21:31:30+00:00",
+  "raw_dir": "/Users/anitaagasaveeran/Desktop/MSSE_Fall2026/CMPE255/Assignment4/03_KDD_Canada_Electricity/data/raw",
+  "data_months": [
+    "2016-01",
+    "2026-08"
+  ],
+  "forecast_origin": "2026-08",
+  "k1_k": 5,
+  "forecast_deployed": "snaive",
+  "forecast_challenger": "combo_avg3_ets",
+  "anomaly_flags": 33,
+  "integration_checks": {
+    "geo-months": 1664.0,
+    "max |generation table - flows table|": 0.0,
+    "geo-months with |availability identity residual| > 1": 1.0,
+    "max |availability identity residual|": 70931.0,
+    "max |types sum - total generation|": 2389.0,
+    "max |receipt parts - total receipts|": 0.0,
+    "max |delivery parts - total deliveries|": 0.0
+  },
+  "preprocessing_decisions": [
+    {
+      "column": "nuclear",
+      "action": "structural zero (no series published)",
+      "geographies": "AB, BC, MB, NL, NS, NT, NU, PE, QC, SK, YT"
+    },
+    {
+      "column": "tidal",
+      "action": "structural zero (no series published)",
+      "geographies": "AB, MB, NT, NU, ON, QC, SK, YT"
+    },
+    {
+      "column": "other",
+      "action": "structural zero (no series published)",
+      "geographies": "NT, NU"
+    },
+    {
+      "column": "receipts",
+      "action": "structural zero (no series published)",
+      "geographies": "NT, NU, YT"
+    },
+    {
+      "column": "deliveries",
+      "action": "structural zero (no series published)",
+      "geographies": "NT, NU, YT"
+    },
+    {
+      "column": "rec_prov",
+      "action": "structural zero (no series published)",
+      "geographies": "NT, NU, YT"
+    },
+    {
+      "column": "del_prov",
+      "action": "structural zero (no series published)",
+      "geographies": "NT, NU, YT"
+    },
+    {
+      "column": "rec_us",
+      "action": "structural zero (no series published)",
+      "geographies": "NT, NU, PE, YT"
+    },
+    {
+      "column": "del_us",
+      "action": "structural zero (no series published)",
+      "geographies": "NT, NU, PE, YT"
+    }
+  ],
+  "data_breaks": {
+    "Nunavut": "2024-10"
+  }
+}

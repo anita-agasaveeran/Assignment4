@@ -17,6 +17,8 @@ venv/
 # Large files that exceed GitHub limits
 *.parquet
 !**/data/sample/*.parquet
+# The SEMMA app reads this file
+!02_SEMMA_Flight_Delays/deployment/test_period_top5pct.parquet
 
 # Streamlit
 .streamlit/secrets.toml

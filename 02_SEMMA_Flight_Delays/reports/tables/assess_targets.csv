@@ -1,0 +1,5 @@
+target,result,met
+T1 champion beats the better rule (90% interval > 0),"gap +0.686 [+0.525, +0.856] vs schedule rule",True
+T2 gap >= +0.15,+0.686,True
+T3 T1 with tail-less cancellations scored as disrupted,"gap +0.685 [+0.523, +0.855] vs schedule rule",True
+(robustness) T1 without the 5% highest-rate days,"gap +0.722 [+0.563, +0.898] on 116 days",True
