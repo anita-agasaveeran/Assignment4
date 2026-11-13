@@ -19,7 +19,6 @@
 | `deployment/` | Streamlit Value Finder, monitoring plan, model card |
 | `reports/` | Final CRISP-DM report and figures |
 | `critiques/` | Critic persona prompt and round-by-round review log |
-| `article/` | Medium article draft |
 | `video/` | Walkthrough script and shot list |
 
 ## Run
@@ -47,6 +46,7 @@ The data is CC BY-NC-SA 4.0 (Zack Thoutt / WineEnthusiast). Derived outputs in t
 | 4 · Modeling | ✅ | ✅ | 3 rounds (6 → 7 → 8/10) |
 | 5 · Evaluation | ✅ | ✅ | 3 rounds (6 → 8 → 9/10) |
 | 6 · Deployment | ✅ | ✅ | 6 rounds (7 → 8 → 8 → 8 → 8 → 9/10), no major issues; round-6 minors fixed (revision 7) |
-| Medium article · Video script | ☐ | | 0 |
+| Video script | ☐ | | 0 |
+| Medium article | written for Medium; the draft is kept outside the repo | | |
 
 The CRISP-DM project originally used a bakery dataset that turned out to be unsuitable. See [`../_archive/README.md`](../_archive/README.md).

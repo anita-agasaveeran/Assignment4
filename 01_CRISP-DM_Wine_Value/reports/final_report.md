@@ -1476,7 +1476,7 @@ As in the pilot, those wines must be every logged candidate that later received 
 ### 6.3 Final report & final presentation
 - **Final report:** this document. Each phase's section carries its revision history and critic rounds; the order of events after unsealing is in `reports/phase5_run_log.md`.
 - **Final presentation:** `reports/final_presentation.md` is a **slide outline**: 12 slides for the buying lead and the analytics manager, with content and speaker notes. Every number on it is taken from this report, and each slide names its section. Its order: the question, how the test was kept honest, the data, the shortlist result, the fragile band, other findings, the option F decision, the tool, the guard rails, monitoring, lessons. Slide 9 uses the app screenshot in `reports/figures/phase6_app_one_wine.png`.
-- **For a wider audience:** a Medium article (`article/medium_article.md`) and a walkthrough video script (`video/script.md`). Both are still outlines and will be written from this report.
+- **For a wider audience:** a Medium article (the draft is kept outside the repo), and a walkthrough video script (`video/script.md`, still an outline). Both tell the story of this report.
 
 ### 6.4 Experience documentation (lessons learned)
 **What worked:**

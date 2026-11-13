@@ -34,7 +34,7 @@ Assignment4/
     ├── deployment/              # app / scoring service / saved model
     ├── reports/                 # detailed final report (Markdown → PDF) + figures
     ├── critiques/               # critic review log, round by round
-    ├── article/                 # Medium article draft
+    ├── article/                 # Medium article draft (later moved outside the repo)
     └── video/                   # walkthrough script + shot list
 ```
 

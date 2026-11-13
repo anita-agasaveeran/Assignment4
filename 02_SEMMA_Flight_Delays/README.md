@@ -22,7 +22,7 @@
 | `deployment/` | `score.py` (batch scoring), `app.py` (Streamlit demo), `model_card.md`, `monitoring_plan.md` |
 | `reports/` | `final_report.md`, `front_pass.md`, `sas_ondemand_guide.md`, `figures/`, `tables/` |
 | `critiques/` | Critic persona prompt and round-by-round reviews |
-| `article/`, `video/` | Medium article draft, walkthrough script |
+| `video/` | Walkthrough script |
 
 ## Run
 ```bash
@@ -41,4 +41,5 @@ python deployment/score.py --date 2026-07-03
 | Sample · Explore · Modify | ✅ | ✅ | 3 (6 → 7 → 8.5/10), no major issues in round 3 |
 | Model | ✅ | ✅ | 2 (6.5 → 8.5/10), no major issues in round 2 |
 | Assess · Score | ✅ (single sealed run) | ✅ | reported; no post-unseal review yet |
-| Medium article · Video script | ✅ drafts | | 0 |
+| Video script | ✅ draft | | 0 |
+| Medium article | written for Medium; the draft is kept outside the repo | | |
