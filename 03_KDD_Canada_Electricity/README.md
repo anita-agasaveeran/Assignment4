@@ -27,6 +27,7 @@
 | 6 Using the knowledge (Streamlit dashboard, `refresh.py`, knowledge base) | ✅ ([deployment](deployment/)) |
 | Final report | ✅ draft ([report](reports/final_report.md)) |
 | Medium article | ✅ [published on Medium](https://medium.com/@anita.agasaveeran/is-canadas-grid-getting-less-dependent-on-burning-fuel-81a2680c654d) |
+| Walkthrough video | ✅ [watch on Loom](https://www.loom.com/share/e78a7b42159d4d64a8f3b5b403ef4822) |
 
 ## Layout
 | Path | What |

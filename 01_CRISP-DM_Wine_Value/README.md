@@ -31,8 +31,6 @@ jupyter notebook notebooks/CRISP_DM_Wine_Value.ipynb   # or open in Colab with t
 streamlit run deployment/app.py
 ```
 
-The Colab badge only works once the GitHub repo is **public**, because the notebook clones it.
-
 ## Licence
 The data is CC BY-NC-SA 4.0 (Zack Thoutt / WineEnthusiast). Derived outputs in this folder (reports, figures, models) are shared under the same licence. Non-commercial use only.
 
@@ -46,5 +44,6 @@ The data is CC BY-NC-SA 4.0 (Zack Thoutt / WineEnthusiast). Derived outputs in t
 | 5 · Evaluation | ✅ | ✅ | 3 rounds (6 → 8 → 9/10) |
 | 6 · Deployment | ✅ | ✅ | 6 rounds (7 → 8 → 8 → 8 → 8 → 9/10), no major issues; round-6 minors fixed (revision 7) |
 | Medium article | ✅ [published on Medium](https://medium.com/@anita.agasaveeran/the-20-bottle-that-scores-like-a-44-one-finding-value-wines-with-crisp-dm-a190430678ab) | | |
+| Walkthrough video | ✅ [watch on Loom](https://www.loom.com/share/1a678ca245d24bc3875fe6b4f54f29b4) | | |
 
 The CRISP-DM project originally used a bakery dataset that turned out to be unsuitable. See [`../_archive/README.md`](../_archive/README.md).

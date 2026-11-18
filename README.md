@@ -4,11 +4,18 @@ Three end-to-end data science projects, each following a different methodology o
 
 | # | Methodology | Project | Dataset | Status |
 |---|---|---|---|---|
-| 1 | CRISP-DM | [Finding Value Wines](01_CRISP-DM_Wine_Value/) | Wine Reviews, WineEnthusiast (Kaggle) | All six phases done: lockbox test passed, pilot decision rule frozen; Streamlit app, model card, monitoring plan, report (tag `wine-phase6-rev7`); article published |
-| 2 | SEMMA | [Will My Flight Be Disrupted Tomorrow?](02_SEMMA_Flight_Delays/) | US BTS flights 2025–26 (Kaggle, CC0) | All SEMMA stages + Score done: sealed test summer lift 2.39 vs 1.70 (best rule), targets T1–T3 met; app + report; article published |
-| 3 | KDD | [Is Canada's Grid Becoming Less Combustion-Dependent?](03_KDD_Canada_Electricity/) | StatCan generation & trade (Kaggle, StatCan Open Licence) | All KDD steps done: K1, K2 met; K3, K4 not met (reported); dashboard + report; article published |
+| 1 | CRISP-DM | [Finding Value Wines](01_CRISP-DM_Wine_Value/) | Wine Reviews, WineEnthusiast (Kaggle) | All six phases done: lockbox test passed, pilot decision rule frozen; Streamlit app, model card, monitoring plan, report (tag `wine-phase6-rev7`); article and video published |
+| 2 | SEMMA | [Will My Flight Be Disrupted Tomorrow?](02_SEMMA_Flight_Delays/) | US BTS flights 2025–26 (Kaggle, CC0) | All SEMMA stages + Score done: sealed test summer lift 2.39 vs 1.70 (best rule), targets T1–T3 met; app + report; article and video published |
+| 3 | KDD | [Is Canada's Grid Becoming Less Combustion-Dependent?](03_KDD_Canada_Electricity/) | StatCan generation & trade (Kaggle, StatCan Open Licence) | All KDD steps done: K1, K2 met; K3, K4 not met (reported); dashboard + report; article and video published |
 
-Each project folder has a Colab notebook, a detailed report, deployment artifacts, and a critic review log. The Medium articles and walkthrough videos are linked below.
+Each project folder has a Colab notebook, a detailed report, deployment artifacts, and a critic review log. The Colab notebooks, Medium articles and walkthrough videos are linked below.
+
+## Colab notebooks
+| # | Methodology | Notebook |
+|---|---|---|
+| 1 | CRISP-DM | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/anita-agasaveeran/Assignment4/blob/main/01_CRISP-DM_Wine_Value/notebooks/CRISP_DM_Wine_Value.ipynb) [`CRISP_DM_Wine_Value.ipynb`](01_CRISP-DM_Wine_Value/notebooks/CRISP_DM_Wine_Value.ipynb) |
+| 2 | SEMMA | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/anita-agasaveeran/Assignment4/blob/main/02_SEMMA_Flight_Delays/notebooks/SEMMA_Flight_Disruption.ipynb) [`SEMMA_Flight_Disruption.ipynb`](02_SEMMA_Flight_Delays/notebooks/SEMMA_Flight_Disruption.ipynb) |
+| 3 | KDD | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/anita-agasaveeran/Assignment4/blob/main/03_KDD_Canada_Electricity/notebooks/KDD_Canada_Electricity.ipynb) [`KDD_Canada_Electricity.ipynb`](03_KDD_Canada_Electricity/notebooks/KDD_Canada_Electricity.ipynb) |
 
 ## Medium articles
 | # | Methodology | Article |
@@ -20,9 +27,9 @@ Each project folder has a Colab notebook, a detailed report, deployment artifact
 ## Videos
 | # | Methodology | Video |
 |---|---|---|
-| 1 | CRISP-DM | *Link to be added* |
-| 2 | SEMMA | *Link to be added* |
-| 3 | KDD | *Link to be added* |
+| 1 | CRISP-DM | [CRISP-DM notebook walkthrough](https://www.loom.com/share/1a678ca245d24bc3875fe6b4f54f29b4) (Loom) |
+| 2 | SEMMA | [SEMMA notebook walkthrough](https://www.loom.com/share/dc312f1a15fc444baf1fa86dd301e552) (Loom) |
+| 3 | KDD | [KDD notebook walkthrough](https://www.loom.com/share/e78a7b42159d4d64a8f3b5b403ef4822) (Loom) |
 
 ## Setup
 ```bash

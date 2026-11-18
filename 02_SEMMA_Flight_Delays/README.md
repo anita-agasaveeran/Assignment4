@@ -41,3 +41,4 @@ python deployment/score.py --date 2026-07-03
 | Model | ✅ | ✅ | 2 (6.5 → 8.5/10), no major issues in round 2 |
 | Assess · Score | ✅ (single sealed run) | ✅ | reported; no post-unseal review yet |
 | Medium article | ✅ [published on Medium](https://medium.com/@anita.agasaveeran/which-380-flights-will-go-wrong-tomorrow-a-semma-walkthrough-on-11-7-million-us-flights-b5c72c315992) | | |
+| Walkthrough video | ✅ [watch on Loom](https://www.loom.com/share/dc312f1a15fc444baf1fa86dd301e552) | | |
